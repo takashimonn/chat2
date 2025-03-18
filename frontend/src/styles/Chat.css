@@ -1,0 +1,278 @@
+.chat-container {
+  display: flex;
+  height: 100vh;
+  background-color: #f0f2f5;
+}
+
+/* Panel de Materias */
+.subjects-panel {
+  width: 350px;
+  background: white;
+  border-right: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease;
+}
+
+.subjects-panel-collapsed {
+  width: 80px;
+}
+
+.subjects-header {
+  padding: 16px;
+  background: #075e54;
+  color: white;
+}
+
+.subjects-list {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.subject-card {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s;
+}
+
+.subject-card:hover {
+  background-color: #f5f5f5;
+}
+
+.subject-card.selected {
+  background-color: #e8f5e9;
+}
+
+.subject-avatar {
+  width: 48px;
+  height: 48px;
+  background: #075e54;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 20px;
+  margin-right: 12px;
+}
+
+.subject-info {
+  flex: 1;
+}
+
+.subject-info h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #333;
+}
+
+.subject-info p {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.unread-count {
+  background: #25d366;
+  color: white;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+/* Panel de Chat */
+.chat-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-header {
+  padding: 16px;
+  background: #075e54;
+  color: white;
+  display: flex;
+  align-items: center;
+}
+
+.toggle-subjects {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  margin-right: 16px;
+}
+
+.messages-container {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  background: #e5ddd5;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.message {
+  margin: 8px 0;
+  max-width: 70%;
+}
+
+.message.sent {
+  margin-left: auto;
+}
+
+.message-sender {
+  font-size: 12px;
+  font-weight: 600;
+  color: #075e54;
+  margin-bottom: 4px;
+}
+
+.message-content {
+  padding: 12px;
+  border-radius: 8px;
+  position: relative;
+}
+
+.message.sent .message-content {
+  background: #dcf8c6;
+}
+
+.message.received .message-content {
+  background: white;
+}
+
+/* Ajuste del espaciado para mensajes con remitente */
+.message.received {
+  margin-bottom: 12px;
+}
+
+/* Ajuste del contenido del mensaje */
+.message-content p {
+  margin: 0;
+  word-break: break-word;
+}
+
+.message-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 4px;
+  gap: 8px;
+}
+
+.message-time {
+  font-size: 11px;
+  color: #666;
+}
+
+.message-status {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+/* Estados de mensajes */
+.message-status.no_leido {
+  background-color: #f0f0f0;
+  color: #666;
+}
+
+.message-status.visto {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.message-status.respondido {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+/* Estilo para mensajes respondidos */
+.reply-to {
+  background: rgba(0,0,0,0.05);
+  padding: 8px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  font-size: 0.9em;
+  border-left: 3px solid #075e54;
+}
+
+.no-chat-selected {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fa;
+  color: #666;
+}
+
+/* Formulario de mensajes */
+.message-form {
+  padding: 16px;
+  background: #f0f0f0;
+  display: flex;
+  gap: 8px;
+  border-top: 1px solid #ddd;
+}
+
+.message-form input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid #ddd;
+  border-radius: 24px;
+  outline: none;
+  font-size: 14px;
+}
+
+.message-form input:focus {
+  border-color: #075e54;
+}
+
+.message-form button {
+  padding: 8px 20px;
+  background: #075e54;
+  color: white;
+  border: none;
+  border-radius: 24px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.message-form button:hover {
+  background: #064942;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .subjects-panel {
+    position: absolute;
+    height: 100%;
+    z-index: 10;
+    transform: translateX(0);
+    transition: transform 0.3s ease;
+  }
+
+  .subjects-panel-collapsed {
+    transform: translateX(-100%);
+  }
+
+  .message {
+    max-width: 85%;
+  }
+
+  .message-footer {
+    flex-wrap: wrap;
+  }
+
+  .message-status {
+    font-size: 10px;
+  }
+}
