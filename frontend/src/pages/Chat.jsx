@@ -36,16 +36,96 @@ const MessageItem = memo(({ message, currentUserId }) => {
 // Componente de formulario de mensajes memo-izado
 const MessageForm = memo(({ onSendMessage }) => {
   const [newMessage, setNewMessage] = useState("");
+  const [priority, setPriority] = useState("normal");
+  const [showPriorityMenu, setShowPriorityMenu] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
-    onSendMessage(newMessage.trim());
+    onSendMessage(newMessage.trim(), priority);
     setNewMessage("");
+  };
+
+  const getPriorityIcon = (priority) => {
+    switch (priority) {
+      case "low":
+        return "low_priority";
+      case "normal":
+        return "drag_handle";
+      case "urgent":
+        return "priority_high";
+      default:
+        return "drag_handle";
+    }
+  };
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case "low":
+        return "#4CAF50";
+      case "normal":
+        return "#2196F3";
+      case "urgent":
+        return "#f44336";
+      default:
+        return "#2196F3";
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="message-form">
+      <div className="priority-selector">
+        <button
+          type="button"
+          className="priority-button"
+          onClick={() => setShowPriorityMenu(!showPriorityMenu)}
+          style={{ color: getPriorityColor(priority) }}
+        >
+          <span className="material-icons-round">
+            {getPriorityIcon(priority)}
+          </span>
+        </button>
+        {showPriorityMenu && (
+          <div className="priority-menu">
+            <div
+              className="priority-option"
+              onClick={() => {
+                setPriority("low");
+                setShowPriorityMenu(false);
+              }}
+            >
+              <span className="material-icons-round" style={{ color: "#4CAF50" }}>
+                low_priority
+              </span>
+              <span>Baja</span>
+            </div>
+            <div
+              className="priority-option"
+              onClick={() => {
+                setPriority("normal");
+                setShowPriorityMenu(false);
+              }}
+            >
+              <span className="material-icons-round" style={{ color: "#2196F3" }}>
+                drag_handle
+              </span>
+              <span>Normal</span>
+            </div>
+            <div
+              className="priority-option"
+              onClick={() => {
+                setPriority("urgent");
+                setShowPriorityMenu(false);
+              }}
+            >
+              <span className="material-icons-round" style={{ color: "#f44336" }}>
+                priority_high
+              </span>
+              <span>Urgente</span>
+            </div>
+          </div>
+        )}
+      </div>
       <input
         type="text"
         value={newMessage}
@@ -177,13 +257,14 @@ const Chat = () => {
     }
   };
 
-  const handleSendMessage = async (messageContent) => {
+  const handleSendMessage = async (messageContent, priority) => {
     if (!selectedSubject) return;
 
     try {
       const response = await axiosInstance.post('/messages', {
         content: messageContent,
-        subject: selectedSubject.id
+        subject: selectedSubject.id,
+        priority: priority
       });
 
       setMessages(prev => {

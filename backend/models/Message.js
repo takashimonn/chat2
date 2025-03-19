@@ -23,6 +23,11 @@ const messageSchema = new mongoose.Schema({
     enum: ['no_leido', 'visto', 'respondido'],
     default: 'no_leido'
   },
+  priority: {
+    type: String,
+    enum: ['low', 'normal', 'urgent'],
+    default: 'normal'
+  },
   replyTo: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Message',
