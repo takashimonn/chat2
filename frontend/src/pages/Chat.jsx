@@ -165,9 +165,9 @@ const Chat = () => {
   };
 
   // Función para marcar mensajes como leídos
-  const markMessagesAsRead = async (messageId) => {
+  const markMessagesAsRead = async (subjectId) => {
     try {
-      const response = await axiosInstance.post(`/messages/subject/${messageId}/read`);
+      const response = await axiosInstance.post(`/messages/subject/${subjectId}/read`);
       const updatedMessages = response.data;
       console.log('Mensajes actualizados:', updatedMessages);
 
@@ -186,13 +186,6 @@ const Chat = () => {
       }
     }
   };
-
-  // Llamar a markMessagesAsRead cuando se selecciona una materia
-  useEffect(() => {
-    // if (selectedSubject) {
-    //   markMessagesAsRead(selectedSubject.id);
-    // }
-  }, [selectedSubject]);
 
   // Componente de mensaje individual
   const MessageItem = ({ message }) => {
@@ -257,11 +250,7 @@ const Chat = () => {
   return (
     <div className="chat-container">
       {/* Panel de Materias */}
-      <div
-        className={`subjects-panel ${
-          !showSubjects && "subjects-panel-collapsed"
-        }`}
-      >
+      <div className={`subjects-panel ${!showSubjects ? 'subjects-panel-collapsed' : ''}`}>
         <div className="subjects-header">
           <h2>Materias</h2>
           <button onClick={handleLogout} className="logout-button">
