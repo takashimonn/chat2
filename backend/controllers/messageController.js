@@ -27,47 +27,33 @@ const messageController = {
   // Crear nuevo mensaje
   createMessage: async (req, res) => {
     try {
-      const { content, subject, replyTo } = req.body;
+      const { content, subject } = req.body;
       const sender = req.user._id;
 
-      const message = new Message({
+      const newMessage = new Message({
         content,
-        subject: parseInt(subject),
+        subject,
         sender,
-        replyTo,
-        status: "no_leido",
-        readBy: [sender], // El remitente ya lo ha leído
+        status: 'no_leido',
+        readBy: [sender]
       });
 
-      await message.save();
+      await newMessage.save();
 
-      // Si es una respuesta, actualizar el mensaje original
-      if (replyTo) {
-        const originalMessage = await Message.findById(replyTo);
-        if (originalMessage) {
-          originalMessage.status = "respondido";
-          await originalMessage.save();
-
-          // Emitir actualización del mensaje original
-          const populatedOriginal = await Message.findById(replyTo)
-            .populate("sender", "username")
-            .populate("readBy", "username");
-
-          req.app.get("io").emit("message_status_updated", populatedOriginal);
-        }
-      }
-
-      const populatedMessage = await Message.findById(message._id)
-        .populate("sender", "username")
-        .populate("readBy", "username");
+      const populatedMessage = await Message.findById(newMessage._id)
+        .populate('sender', 'username')
+        .populate('readBy', 'username');
 
       // Emitir el nuevo mensaje
-      req.app.get("io").emit("new_message", populatedMessage);
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('new_message', populatedMessage);
+      }
 
       res.status(201).json(populatedMessage);
     } catch (error) {
-      console.error("Error al crear mensaje:", error);
-      res.status(500).json({ message: "Error al crear mensaje" });
+      console.error('Error al crear mensaje:', error);
+      res.status(500).json({ message: 'Error al crear mensaje' });
     }
   },
 
@@ -131,35 +117,32 @@ const messageController = {
     }
   },
 
+  // Obtener mensajes por materia
   getMessagesBySubject: async (req, res) => {
     try {
       const { subjectId } = req.params;
-      //console.log('Buscando mensajes para materia:', subjectId);
+      
+      const messages = await Message.find({ subject: subjectId })
+        .populate('sender', 'username')
+        .populate('readBy', 'username')
+        .sort({ createdAt: 1 });
 
-      const messages = await Message.find({
-        subject: parseInt(subjectId), // Convertir a número ya que así guardamos el subject
-      })
-        .populate("sender", "username")
-        .sort({ timestamp: 1 });
-
-      //console.log('Mensajes encontrados:', messages);
       res.json(messages);
     } catch (error) {
-      console.error("Error al obtener mensajes:", error);
-      res.status(500).json({ message: "Error al obtener mensajes" });
+      console.error('Error al obtener mensajes:', error);
+      res.status(500).json({ message: 'Error al obtener mensajes' });
     }
   },
 
+  // Marcar mensajes como leídos
   markAsRead: async (req, res) => {
-    // console.log("body", req.body);
-    // console.log("params", req.params);
-    // console.log('rq', req)
     try {
-      const { messageId } = req.params;
+      const { subjectId } = req.params;
       const userId = req.user._id;
 
+      // Encontrar mensajes no leídos
       const unreadMessages = await Message.find({
-        subject: messageId,
+        subject: subjectId,
         sender: { $ne: userId },
         readBy: { $ne: userId }
       });
@@ -167,22 +150,23 @@ const messageController = {
       const updatedMessages = [];
 
       for (const message of unreadMessages) {
-        // Agregar el usuario a readBy si no está ya incluido
+        // Actualizar estado del mensaje
         if (!message.readBy.includes(userId)) {
           message.readBy.push(userId);
           message.status = 'visto';
           await message.save();
 
-          // Poblar el mensaje con la información del remitente y lectores
+          // Poblar el mensaje actualizado
           const populatedMessage = await Message.findById(message._id)
             .populate('sender', 'username')
             .populate('readBy', 'username');
 
           updatedMessages.push(populatedMessage);
 
-          // Emitir el evento de actualización
+          // Emitir evento de actualización
           const io = req.app.get('io');
           if (io) {
+            console.log('Emitiendo actualización de estado:', populatedMessage);
             io.emit('message_status_updated', populatedMessage);
           }
         }
@@ -191,7 +175,7 @@ const messageController = {
       res.json(updatedMessages);
     } catch (error) {
       console.error('Error al marcar mensajes como leídos:', error);
-      res.status(500).json({ message: 'Error al actualizar estados de mensajes' });
+      res.status(500).json({ message: 'Error al actualizar estados' });
     }
   },
 };

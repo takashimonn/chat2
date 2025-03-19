@@ -20,6 +20,6 @@ router.patch('/:messageId/status', messageController.updateMessageStatus);
 router.get('/subject/:subjectId', messageController.getMessagesBySubject);
 
 // Ruta para marcar como leído
-router.post('/:messageId/read', messageController.markAsRead);
+router.post('/subject/:subjectId/read', messageController.markAsRead);
 
 module.exports = router; 

@@ -21,6 +21,14 @@ const Chat = () => {
   const [replyingTo, setReplyingTo] = useState(null);
   const currentUserId = localStorage.getItem('userId');
 
+  // Verificar autenticación al montar el componente
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/', { replace: true });
+    }
+  }, []);
+
   // Función para hacer scroll al último mensaje
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -52,6 +60,7 @@ const Chat = () => {
 
     // Escuchar nuevos mensajes
     socketRef.current.on('new_message', (newMessage) => {
+      console.log('Nuevo mensaje recibido:', newMessage);
       setMessages(prev => [...prev, newMessage]);
     });
 
@@ -63,31 +72,31 @@ const Chat = () => {
   // Cargar mensajes cuando se selecciona una materia
   useEffect(() => {
     if (selectedSubject) {
-      loadMessagesForSubject(selectedSubject.id);
+      loadMessages();
       // Unirse a la sala de la materia
       socketRef.current?.emit('join_subject', selectedSubject.id);
     }
   }, [selectedSubject]);
 
-  const loadMessagesForSubject = async (subjectId) => {
+  const loadMessages = async () => {
+    if (!selectedSubject) return;
+
     try {
-      console.log('Cargando mensajes para materia:', subjectId);
-      const response = await fetch(`http://localhost:4000/api/messages/subject/${subjectId}`, {
+      const response = await fetch(`http://localhost:4000/api/messages/subject/${selectedSubject.id}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      
+
       if (!response.ok) throw new Error('Error al cargar mensajes');
-      
+
       const data = await response.json();
-      for (const message of data) {
-        if (message.status === 'no_leido') {
-          markMessagesAsRead(message._id);
-        }
-      }
+      setMessages(data.filter((msg, index, self) => 
+        index === self.findIndex(m => m._id === msg._id)
+      ));
       
-      setMessages(data);
+      // Marcar mensajes como leídos
+      await markMessagesAsRead(selectedSubject.id);
     } catch (error) {
       console.error('Error al cargar mensajes:', error);
     }
@@ -95,30 +104,58 @@ const Chat = () => {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
+    
+    const token = localStorage.getItem('token');
+    
+    // Verificar si hay token
+    if (!token) {
+      Swal.fire('Error', 'No hay sesión activa. Por favor, inicia sesión nuevamente.', 'error');
+      navigate('/login');
+      return;
+    }
+
     if (!newMessage.trim() || !selectedSubject) return;
 
     try {
+      // Log para debugging
+      console.log('Token:', token.substring(0, 20) + '...'); // Solo mostrar parte del token
+      
       const response = await fetch('http://localhost:4000/api/messages', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          content: newMessage,
+          content: newMessage.trim(),
           subject: selectedSubject.id
         })
       });
 
-      if (!response.ok) throw new Error('Error al enviar mensaje');
+      // Log de la respuesta para debugging
+      console.log('Status:', response.status);
+      const data = await response.json();
+      console.log('Respuesta:', data);
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          // Si no está autorizado, redirigir al login
+          localStorage.clear();
+          navigate('/login');
+          throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
+        }
+        throw new Error(data.message || 'Error al enviar mensaje');
+      }
+
+      setMessages(prev => [...prev, data]);
       setNewMessage('');
-      
+
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error completo:', error);
       Swal.fire({
         icon: 'error',
-        title: 'Error',
-        text: 'No se pudo enviar el mensaje'
+        title: 'Error al enviar mensaje',
+        text: error.message
       });
     }
   };
@@ -149,32 +186,42 @@ const Chat = () => {
     setShowSubjects(false);
   };
 
-  // Función para marcar mensajes como leídos cuando se abre el chat
-  useEffect(() => {
-    if (selectedSubject) {
-      console.log('AAAAAA', selectedSubject)
-      //markMessagesAsRead(selectedSubject.id);
-    }
-  }, [selectedSubject]);
-
-  const markMessagesAsRead = async (messageId) => {
+  // Función para marcar mensajes como leídos
+  const markMessagesAsRead = async (subjectId) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/messages/${messageId}/read`, {
+      const response = await fetch(`http://localhost:4000/api/messages/subject/${subjectId}/read`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
         }
       });
 
       if (!response.ok) throw new Error('Error al marcar mensajes como leídos');
 
       const updatedMessages = await response.json();
-      console.log('Mensajes marcados como leídos:', updatedMessages);
+      console.log('Mensajes actualizados:', updatedMessages);
+
+      // Actualizar estados localmente
+      setMessages(prevMessages => 
+        prevMessages.map(msg => {
+          const updatedMsg = updatedMessages.find(m => m._id === msg._id);
+          return updatedMsg || msg;
+        })
+      );
     } catch (error) {
       console.error('Error:', error);
     }
   };
 
+  // Llamar a markMessagesAsRead cuando se selecciona una materia
+  useEffect(() => {
+    if (selectedSubject) {
+      markMessagesAsRead(selectedSubject.id);
+    }
+  }, [selectedSubject]);
+
+  // Componente de mensaje individual
   const MessageItem = ({ message }) => {
     const isOwnMessage = message.sender._id === currentUserId;
     
@@ -182,22 +229,19 @@ const Chat = () => {
       <div className={`message ${isOwnMessage ? 'sent' : 'received'}`}>
         <div className="message-content">
           {!isOwnMessage && (
-            <div className="message-sender">
-              {message.sender.username}
-            </div>
-          )}
-          {message.replyTo && (
-            <div className="reply-to">
-              Respondiendo a: {message.replyTo.content}
-            </div>
+            <div className="message-sender">{message.sender.username}</div>
           )}
           <p>{message.content}</p>
           <div className="message-footer">
             <span className="message-time">
-              {new Date(message.timestamp).toLocaleTimeString()}
+              {new Date(message.createdAt).toLocaleTimeString()}
             </span>
             <span className={`message-status ${message.status}`}>
-              {getMessageStatus(message)}
+              {message.status === 'visto' 
+                ? `Visto (${message.readBy?.length || 0})` 
+                : message.status === 'respondido'
+                ? 'Respondido'
+                : 'No leído'}
             </span>
           </div>
         </div>
@@ -205,17 +249,36 @@ const Chat = () => {
     );
   };
 
-  const getMessageStatus = (message) => {
-    switch (message.status) {
-      case 'visto':
-        return `Visto (${message.readBy?.length || 0})`;
-      case 'respondido':
-        return 'Respondido';
-      case 'no_leido':
-        return 'No leído';
-      default:
-        return message.status;
-    }
+  const handleLogout = () => {
+    Swal.fire({
+      title: '¿Cerrar sesión?',
+      text: '¿Estás seguro que deseas salir?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sí, cerrar sesión',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Desconectar socket
+        if (socketRef.current) {
+          socketRef.current.disconnect();
+        }
+        
+        // Limpiar localStorage
+        localStorage.clear();
+        
+        // Redireccionar al LoginForm
+        navigate('/', { replace: true });
+        
+        Swal.fire({
+          icon: 'success',
+          title: '¡Sesión cerrada!',
+          text: 'Has cerrado sesión exitosamente'
+        });
+      }
+    });
   };
 
   return (
@@ -224,6 +287,9 @@ const Chat = () => {
       <div className={`subjects-panel ${!showSubjects && 'subjects-panel-collapsed'}`}>
         <div className="subjects-header">
           <h2>Materias</h2>
+          <button onClick={handleLogout} className="logout-button">
+            Cerrar Sesión
+          </button>
         </div>
         <div className="subjects-list">
           {subjects.map(subject => (
@@ -262,7 +328,31 @@ const Chat = () => {
 
           <div className="messages-container">
             {messages.map((message, index) => (
-              <MessageItem key={message._id || index} message={message} />
+              <div 
+                key={`${message._id}-${index}`}
+                className={`message ${message.sender._id === currentUserId ? 'sent' : 'received'}`}
+              >
+                <div className="message-content">
+                  {message.sender._id !== currentUserId && (
+                    <div className="message-sender">
+                      {message.sender.username}
+                    </div>
+                  )}
+                  <p>{message.content}</p>
+                  <div className="message-footer">
+                    <span className="message-time">
+                      {new Date(message.createdAt).toLocaleTimeString()}
+                    </span>
+                    <span className={`message-status ${message.status}`}>
+                      {message.status === 'visto' 
+                        ? `Visto (${message.readBy?.length || 0})` 
+                        : message.status === 'respondido'
+                        ? 'Respondido'
+                        : 'No leído'}
+                    </span>
+                  </div>
+                </div>
+              </div>
             ))}
             <div ref={messagesEndRef} />
           </div>

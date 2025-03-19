@@ -22,6 +22,29 @@
   padding: 16px;
   background: #075e54;
   color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logout-button {
+  background-color: #d33;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.logout-button:hover {
+  background-color: #bf2e2e;
+}
+
+.subjects-header h2 {
+  margin: 0;
+  font-size: 1.2em;
 }
 
 .subjects-list {
