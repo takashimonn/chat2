@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import io from 'socket.io-client';
 import '../styles/Chat.css';
+import axiosInstance from '../utils/axiosConfig';
 
 const Chat = () => {
   const [subjects, setSubjects] = useState([
@@ -15,6 +16,7 @@ const Chat = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [showSubjects, setShowSubjects] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const socketRef = useRef(null);
   const navigate = useNavigate();
   const messagesEndRef = useRef(null);
@@ -81,16 +83,11 @@ const Chat = () => {
   const loadMessages = async () => {
     if (!selectedSubject) return;
 
+    setIsLoading(true);
     try {
-      const response = await fetch(`http://localhost:4000/api/messages/subject/${selectedSubject.id}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (!response.ok) throw new Error('Error al cargar mensajes');
-
-      const data = await response.json();
+      const response = await axiosInstance.get(`/messages/subject/${selectedSubject.id}`);
+      const data = response.data;
+      
       setMessages(data.filter((msg, index, self) => 
         index === self.findIndex(m => m._id === msg._id)
       ));
@@ -99,63 +96,39 @@ const Chat = () => {
       await markMessagesAsRead(selectedSubject.id);
     } catch (error) {
       console.error('Error al cargar mensajes:', error);
+      if (error.response?.status === 401) {
+        localStorage.clear();
+        navigate('/');
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
     
-    const token = localStorage.getItem('token');
-    
-    // Verificar si hay token
-    if (!token) {
-      Swal.fire('Error', 'No hay sesión activa. Por favor, inicia sesión nuevamente.', 'error');
-      navigate('/login');
-      return;
-    }
-
     if (!newMessage.trim() || !selectedSubject) return;
 
     try {
-      // Log para debugging
-      console.log('Token:', token.substring(0, 20) + '...'); // Solo mostrar parte del token
-      
-      const response = await fetch('http://localhost:4000/api/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          content: newMessage.trim(),
-          subject: selectedSubject.id
-        })
+      const response = await axiosInstance.post('/messages', {
+        content: newMessage.trim(),
+        subject: selectedSubject.id
       });
 
-      // Log de la respuesta para debugging
-      console.log('Status:', response.status);
-      const data = await response.json();
-      console.log('Respuesta:', data);
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          // Si no está autorizado, redirigir al login
-          localStorage.clear();
-          navigate('/login');
-          throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
-        }
-        throw new Error(data.message || 'Error al enviar mensaje');
-      }
-
-      setMessages(prev => [...prev, data]);
+      setMessages(prev => [...prev, response.data]);
       setNewMessage('');
 
     } catch (error) {
       console.error('Error completo:', error);
+      if (error.response?.status === 401) {
+        localStorage.clear();
+        navigate('/');
+      }
       Swal.fire({
         icon: 'error',
         title: 'Error al enviar mensaje',
-        text: error.message
+        text: error.response?.data?.message || 'Error al enviar mensaje'
       });
     }
   };
@@ -183,23 +156,13 @@ const Chat = () => {
 
   const handleSubjectSelect = (subject) => {
     setSelectedSubject(subject);
-    setShowSubjects(false);
   };
 
   // Función para marcar mensajes como leídos
   const markMessagesAsRead = async (subjectId) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/messages/subject/${subjectId}/read`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) throw new Error('Error al marcar mensajes como leídos');
-
-      const updatedMessages = await response.json();
+      const response = await axiosInstance.post(`/messages/subject/${subjectId}/read`);
+      const updatedMessages = response.data;
       console.log('Mensajes actualizados:', updatedMessages);
 
       // Actualizar estados localmente
@@ -211,6 +174,10 @@ const Chat = () => {
       );
     } catch (error) {
       console.error('Error:', error);
+      if (error.response?.status === 401) {
+        localStorage.clear();
+        navigate('/');
+      }
     }
   };
 
@@ -284,7 +251,7 @@ const Chat = () => {
   return (
     <div className="chat-container">
       {/* Panel de Materias */}
-      <div className={`subjects-panel ${!showSubjects && 'subjects-panel-collapsed'}`}>
+      <div className={`subjects-panel ${!showSubjects ? 'subjects-panel-collapsed' : ''}`}>
         <div className="subjects-header">
           <h2>Materias</h2>
           <button onClick={handleLogout} className="logout-button">
@@ -292,7 +259,7 @@ const Chat = () => {
           </button>
         </div>
         <div className="subjects-list">
-          {subjects.map(subject => (
+          {subjects.map((subject) => (
             <div
               key={subject.id}
               className={`subject-card ${selectedSubject?.id === subject.id ? 'selected' : ''}`}
@@ -311,70 +278,58 @@ const Chat = () => {
       </div>
 
       {/* Panel de Chat */}
-      {selectedSubject ? (
-        <div className="chat-panel">
-          <div className="chat-header">
-            <button 
-              className="toggle-subjects"
-              onClick={() => setShowSubjects(!showSubjects)}
-            >
-              ☰
-            </button>
-            <div className="subject-info">
+      <div className="chat-panel">
+        <div className="chat-header">
+          <button 
+            className="toggle-subjects" 
+            onClick={() => setShowSubjects(!showSubjects)}
+          >
+            ☰
+          </button>
+          {selectedSubject ? (
+            <div className="chat-header-info">
               <h2>{selectedSubject.name}</h2>
               <p>{selectedSubject.teacher}</p>
             </div>
-          </div>
+          ) : (
+            <h2>Selecciona una materia para comenzar</h2>
+          )}
+        </div>
 
-          <div className="messages-container">
-            {messages.map((message, index) => (
-              <div 
-                key={`${message._id}-${index}`}
-                className={`message ${message.sender._id === currentUserId ? 'sent' : 'received'}`}
-              >
-                <div className="message-content">
-                  {message.sender._id !== currentUserId && (
-                    <div className="message-sender">
-                      {message.sender.username}
-                    </div>
-                  )}
-                  <p>{message.content}</p>
-                  <div className="message-footer">
-                    <span className="message-time">
-                      {new Date(message.createdAt).toLocaleTimeString()}
-                    </span>
-                    <span className={`message-status ${message.status}`}>
-                      {message.status === 'visto' 
-                        ? `Visto (${message.readBy?.length || 0})` 
-                        : message.status === 'respondido'
-                        ? 'Respondido'
-                        : 'No leído'}
-                    </span>
-                  </div>
+        {selectedSubject ? (
+          <>
+            <div className="messages-container">
+              {isLoading ? (
+                <div className="loading-container">
+                  <span className="material-icons-round loading-icon">sync</span>
+                  <p>Cargando mensajes...</p>
                 </div>
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
+              ) : (
+                messages.map((message) => (
+                  <MessageItem key={message._id} message={message} />
+                ))
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+            <form onSubmit={handleSendMessage} className="message-form">
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Escribe un mensaje..."
+              />
+              <button type="submit">Enviar</button>
+            </form>
+          </>
+        ) : (
+          <div className="no-chat-selected">
+            <div className="empty-state">
+              <span className="material-icons-round message-icon">mail_outline</span>
+              <p>Selecciona una conversación</p>
+            </div>
           </div>
-
-          <form className="message-form" onSubmit={handleSendMessage}>
-            <input
-              type="text"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Escribe un mensaje..."
-              className="message-input"
-            />
-            <button type="submit" className="send-button">
-              Enviar
-            </button>
-          </form>
-        </div>
-      ) : (
-        <div className="no-chat-selected">
-          <h2>Selecciona una materia para comenzar a chatear</h2>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
