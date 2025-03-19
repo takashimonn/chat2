@@ -198,6 +198,8 @@ const Chat = () => {
   const navigate = useNavigate();
   const messagesEndRef = useRef(null);
   const currentUserId = localStorage.getItem("userId");
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Verificar autenticación al montar el componente
   useEffect(() => {
@@ -392,8 +394,10 @@ const Chat = () => {
   };
 
   const filteredMessages = messages.filter(message => {
-    if (priorityFilter === "todos") return true;
-    return message.priority === priorityFilter;
+    let matchesPriority = priorityFilter === "todos" || message.priority === priorityFilter;
+    let matchesSearch = !searchQuery || 
+      message.content.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesPriority && matchesSearch;
   });
 
   return (
@@ -402,7 +406,8 @@ const Chat = () => {
         <div className="subjects-header">
           <h2>Materias</h2>
           <button onClick={handleLogout} className="logout-button">
-            Cerrar Sesión
+            <span className="material-icons-round">logout</span>
+            <span>Cerrar Sesión</span>
           </button>
         </div>
         <div className="subjects-list">
@@ -433,79 +438,107 @@ const Chat = () => {
             ☰
           </button>
           {selectedSubject ? (
-            <div className="chat-header-info">
-              <h2>{selectedSubject.name}</h2>
-              <p>{selectedSubject.teacher}</p>
-            </div>
-          ) : (
-            <h2>Selecciona una materia para comenzar</h2>
-          )}
-          {selectedSubject && (
-            <div className="filter-selector">
-              <button
-                type="button"
-                className="filter-button"
-                onClick={() => setShowFilterMenu(!showFilterMenu)}
-                title="Filtrar por prioridad"
-              >
-                <span className="material-icons-round">
-                  {getFilterIcon(priorityFilter)}
-                </span>
-                <span className="filter-text">Filtrar</span>
-              </button>
-              {showFilterMenu && (
-                <div className="filter-menu">
-                  <div
-                    className="filter-option"
-                    onClick={() => {
-                      setPriorityFilter("todos");
-                      setShowFilterMenu(false);
-                    }}
+            <>
+              <div className="chat-header-info">
+                <h2>{selectedSubject.name}</h2>
+                <p>{selectedSubject.teacher}</p>
+              </div>
+              <div className="header-actions">
+                <div className="search-container">
+                  <button
+                    className="search-button"
+                    onClick={() => setShowSearch(!showSearch)}
+                    title="Buscar mensajes"
                   >
-                    <span className="material-icons-round" style={{ color: "#757575" }}>
-                      filter_list
-                    </span>
-                    <span>Todos</span>
-                  </div>
-                  <div
-                    className="filter-option"
-                    onClick={() => {
-                      setPriorityFilter("baja");
-                      setShowFilterMenu(false);
-                    }}
-                  >
-                    <span className="material-icons-round" style={{ color: "#4CAF50" }}>
-                      low_priority
-                    </span>
-                    <span>Baja</span>
-                  </div>
-                  <div
-                    className="filter-option"
-                    onClick={() => {
-                      setPriorityFilter("media");
-                      setShowFilterMenu(false);
-                    }}
-                  >
-                    <span className="material-icons-round" style={{ color: "#2196F3" }}>
-                      drag_handle
-                    </span>
-                    <span>Media</span>
-                  </div>
-                  <div
-                    className="filter-option"
-                    onClick={() => {
-                      setPriorityFilter("urgente");
-                      setShowFilterMenu(false);
-                    }}
-                  >
-                    <span className="material-icons-round" style={{ color: "#f44336" }}>
-                      priority_high
-                    </span>
-                    <span>Urgente</span>
+                    <span className="material-icons-round">search</span>
+                  </button>
+                  <div className={`search-input-container ${showSearch ? 'show' : ''}`}>
+                    <input
+                      type="text"
+                      placeholder="Buscar mensajes..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="search-input"
+                    />
+                    {searchQuery && (
+                      <button
+                        className="clear-search"
+                        onClick={() => setSearchQuery("")}
+                      >
+                        <span className="material-icons-round">close</span>
+                      </button>
+                    )}
                   </div>
                 </div>
-              )}
-            </div>
+                <div className="filter-selector">
+                  <button
+                    type="button"
+                    className="filter-button"
+                    onClick={() => setShowFilterMenu(!showFilterMenu)}
+                    title="Filtrar por prioridad"
+                  >
+                    <span className="material-icons-round">
+                      {getFilterIcon(priorityFilter)}
+                    </span>
+                    <span className="filter-text">Filtrar</span>
+                  </button>
+                  {showFilterMenu && (
+                    <div className="filter-menu">
+                      <div
+                        className="filter-option"
+                        onClick={() => {
+                          setPriorityFilter("todos");
+                          setShowFilterMenu(false);
+                        }}
+                      >
+                        <span className="material-icons-round" style={{ color: "#757575" }}>
+                          filter_list
+                        </span>
+                        <span>Todos</span>
+                      </div>
+                      <div
+                        className="filter-option"
+                        onClick={() => {
+                          setPriorityFilter("baja");
+                          setShowFilterMenu(false);
+                        }}
+                      >
+                        <span className="material-icons-round" style={{ color: "#4CAF50" }}>
+                          low_priority
+                        </span>
+                        <span>Baja</span>
+                      </div>
+                      <div
+                        className="filter-option"
+                        onClick={() => {
+                          setPriorityFilter("media");
+                          setShowFilterMenu(false);
+                        }}
+                      >
+                        <span className="material-icons-round" style={{ color: "#2196F3" }}>
+                          drag_handle
+                        </span>
+                        <span>Media</span>
+                      </div>
+                      <div
+                        className="filter-option"
+                        onClick={() => {
+                          setPriorityFilter("urgente");
+                          setShowFilterMenu(false);
+                        }}
+                      >
+                        <span className="material-icons-round" style={{ color: "#f44336" }}>
+                          priority_high
+                        </span>
+                        <span>Urgente</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          ) : (
+            <h2>Selecciona una materia para comenzar</h2>
           )}
         </div>
 
