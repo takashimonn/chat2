@@ -116,7 +116,12 @@ const Chat = () => {
 
     // Escuchar nuevos mensajes
     socketRef.current.on("new_message", (newMessage) => {
-      setMessages((prev) => [...prev, newMessage]);
+      // Solo agregar el mensaje si no existe ya
+      setMessages((prev) => {
+        const messageExists = prev.some(msg => msg._id === newMessage._id);
+        if (messageExists) return prev;
+        return [...prev, newMessage];
+      });
       scrollToBottom();
     });
 
@@ -168,7 +173,12 @@ const Chat = () => {
         subject: selectedSubject.id
       });
 
-      setMessages(prev => [...prev, response.data]);
+      // Agregar el mensaje solo si no existe ya
+      setMessages(prev => {
+        const messageExists = prev.some(msg => msg._id === response.data._id);
+        if (messageExists) return prev;
+        return [...prev, response.data];
+      });
       scrollToBottom();
     } catch (error) {
       console.error('Error completo:', error);
