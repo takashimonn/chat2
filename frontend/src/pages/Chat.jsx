@@ -82,14 +82,21 @@ const Chat = () => {
   }, []);
 
   // Función para hacer scroll al último mensaje
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const scrollToBottom = (smooth = false) => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: smooth ? "smooth" : "auto",
+        block: "end"
+      });
+    }
   };
 
   // Efecto para hacer scroll cuando cambian los mensajes
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    // Solo usar scroll suave cuando se envía un mensaje nuevo
+    const smooth = messages.length > 0 && !isLoading;
+    scrollToBottom(smooth);
+  }, [messages, isLoading]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -122,7 +129,7 @@ const Chat = () => {
         if (messageExists) return prev;
         return [...prev, newMessage];
       });
-      scrollToBottom();
+      scrollToBottom(true);
     });
 
     return () => {
@@ -136,6 +143,8 @@ const Chat = () => {
       loadMessages();
       // Unirse a la sala de la materia
       socketRef.current?.emit("join_subject", selectedSubject.id);
+      // Scroll inmediato al seleccionar materia
+      scrollToBottom(false);
     }
   }, [selectedSubject]);
 
@@ -143,6 +152,8 @@ const Chat = () => {
     if (!selectedSubject) return;
 
     setIsLoading(true);
+    scrollToBottom(false); // Scroll inmediato antes de cargar
+    
     try {
       const response = await axiosInstance.get(`/messages/subject/${selectedSubject.id}`);
       const data = response.data;
@@ -161,6 +172,8 @@ const Chat = () => {
       }
     } finally {
       setIsLoading(false);
+      // Asegurar que estamos al final después de cargar
+      setTimeout(() => scrollToBottom(false), 0);
     }
   };
 
@@ -173,13 +186,13 @@ const Chat = () => {
         subject: selectedSubject.id
       });
 
-      // Agregar el mensaje solo si no existe ya
       setMessages(prev => {
         const messageExists = prev.some(msg => msg._id === response.data._id);
         if (messageExists) return prev;
         return [...prev, response.data];
       });
-      scrollToBottom();
+      // Usar scroll suave solo para mensajes nuevos
+      scrollToBottom(true);
     } catch (error) {
       console.error('Error completo:', error);
       if (error.response?.status === 401) {

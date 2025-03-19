@@ -136,14 +136,14 @@ const messageController = {
   // Marcar mensajes como leídos
   markAsRead: async (req, res) => {
     try {
-      const { messageId } = req.params;
-      //const userId = req.user._id;
+      const { subjectId } = req.params;
+      const userId = req.user._id;
 
-      // Encontrar mensajes no leídos
+      // Encontrar mensajes no leídos de la materia
       const unreadMessages = await Message.find({
-        _id: messageId,
-        //sender: { $ne: userId },
-        //readBy: { $ne: userId }
+        subject: subjectId,
+        sender: { $ne: userId },
+        readBy: { $ne: userId }
       });
 
       const updatedMessages = [];
@@ -165,13 +165,12 @@ const messageController = {
           // Emitir evento de actualización
           const io = req.app.get('io');
           if (io) {
-            console.log('Emitiendo actualización de estado:', populatedMessage);
             io.emit('message_status_updated', populatedMessage);
           }
         }
       }
 
-      res.json('si jalo', updatedMessages);
+      res.json(updatedMessages);
     } catch (error) {
       console.error('Error al marcar mensajes como leídos:', error);
       res.status(500).json({ message: 'Error al actualizar estados' });
