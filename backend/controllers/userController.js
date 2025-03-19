@@ -1,18 +1,16 @@
 const User = require('../models/User');
+const Messages = require('../models/Message');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const userController = {
   // Registrar un nuevo usuario
   register: async (req, res) => {
-    console.log('Recibida solicitud de registro:', req.body);
 
     try {
       const { email, password, name } = req.body;
 
-      // Verificar si el usuario ya existe
       const userExists = await User.findOne({ email });
-      console.log('Usuario existe:', userExists);
 
       if (userExists) {
         return res.status(400).json({
@@ -27,9 +25,7 @@ const userController = {
         name
       });
 
-      console.log('Intentando guardar usuario:', user);
       await user.save();
-      console.log('Usuario guardado exitosamente');
 
       const token = jwt.sign(
         { id: user._id, email: user.email },
@@ -60,7 +56,7 @@ const userController = {
   login: async (req, res) => {
     try {
       const { email, password } = req.body;
-      
+
       const user = await User.findOne({ email });
       if (!user || !(await user.comparePassword(password))) {
         return res.status(401).json({ message: 'Credenciales inválidas' });
@@ -84,6 +80,16 @@ const userController = {
     } catch (error) {
       console.error('Error en login:', error);
       res.status(500).json({ message: 'Error en el servidor' });
+    }
+  },
+
+  allUsers: async (req, res) => {
+    try {
+      const users = await Messages.find({_id: "67d903ddcbe149736ee020bf"});
+      res.json(users);
+    } catch (error) {
+      console.error('Error al obtener usuarios:', error);
+      res.status(500).json({ message: 'Error al obtener usuarios' });
     }
   }
 };

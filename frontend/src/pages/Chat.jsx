@@ -1,31 +1,31 @@
-import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Swal from 'sweetalert2';
-import io from 'socket.io-client';
-import '../styles/Chat.css';
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
+import io from "socket.io-client";
+import "../styles/Chat.css";
 
 const Chat = () => {
   const [subjects, setSubjects] = useState([
-    { id: 1, name: 'Matemáticas', teacher: 'Dr. García' },
-    { id: 2, name: 'Física', teacher: 'Dra. Rodríguez' },
-    { id: 3, name: 'Química', teacher: 'Dr. Martínez' },
-    { id: 4, name: 'Programación', teacher: 'Ing. López' },
+    { id: 1, name: "Matemáticas", teacher: "Dr. García" },
+    { id: 2, name: "Física", teacher: "Dra. Rodríguez" },
+    { id: 3, name: "Química", teacher: "Dr. Martínez" },
+    { id: 4, name: "Programación", teacher: "Ing. López" },
   ]);
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
+  const [newMessage, setNewMessage] = useState("");
   const [showSubjects, setShowSubjects] = useState(true);
   const socketRef = useRef(null);
   const navigate = useNavigate();
   const messagesEndRef = useRef(null);
   const [replyingTo, setReplyingTo] = useState(null);
-  const currentUserId = localStorage.getItem('userId');
+  const currentUserId = localStorage.getItem("userId");
 
   // Verificar autenticación al montar el componente
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token) {
-      navigate('/', { replace: true });
+      navigate("/", { replace: true });
     }
   }, []);
 
@@ -35,33 +35,33 @@ const Chat = () => {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token) {
-      navigate('/');
+      navigate("/");
       return;
     }
 
     // Configuración del socket
-    socketRef.current = io('http://localhost:4000', {
+    socketRef.current = io("http://localhost:4000", {
       auth: {
-        token: localStorage.getItem('token')
-      }
+        token: localStorage.getItem("token"),
+      },
     });
 
     // Escuchar actualizaciones de estado de mensajes
-    socketRef.current.on('message_status_updated', (updatedMessage) => {
-      console.log('Estado actualizado recibido:', updatedMessage);
-      setMessages(prevMessages => 
-        prevMessages.map(msg => 
+    socketRef.current.on("message_status_updated", (updatedMessage) => {
+      console.log("Estado actualizado recibido:", updatedMessage);
+      setMessages((prevMessages) =>
+        prevMessages.map((msg) =>
           msg._id === updatedMessage._id ? updatedMessage : msg
         )
       );
     });
 
     // Escuchar nuevos mensajes
-    socketRef.current.on('new_message', (newMessage) => {
-      console.log('Nuevo mensaje recibido:', newMessage);
-      setMessages(prev => [...prev, newMessage]);
+    socketRef.current.on("new_message", (newMessage) => {
+      console.log("Nuevo mensaje recibido:", newMessage);
+      setMessages((prev) => [...prev, newMessage]);
     });
 
     return () => {
@@ -74,7 +74,7 @@ const Chat = () => {
     if (selectedSubject) {
       loadMessages();
       // Unirse a la sala de la materia
-      socketRef.current?.emit('join_subject', selectedSubject.id);
+      socketRef.current?.emit("join_subject", selectedSubject.id);
     }
   }, [selectedSubject]);
 
@@ -82,35 +82,48 @@ const Chat = () => {
     if (!selectedSubject) return;
 
     try {
-      const response = await fetch(`http://localhost:4000/api/messages/subject/${selectedSubject.id}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+      const response = await fetch(
+        `http://localhost:4000/api/messages/subject/${selectedSubject.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
         }
-      });
+      );
 
-      if (!response.ok) throw new Error('Error al cargar mensajes');
+      if (!response.ok) throw new Error("Error al cargar mensajes");
 
       const data = await response.json();
-      setMessages(data.filter((msg, index, self) => 
-        index === self.findIndex(m => m._id === msg._id)
-      ));
-      
-      // Marcar mensajes como leídos
-      await markMessagesAsRead(selectedSubject.id);
+      setMessages(
+        data.filter(
+          (msg, index, self) =>
+            index === self.findIndex((m) => m._id === msg._id)
+        )
+      );
+
+      for (let msg of data) {
+        if (msg.status === "no_leido") {
+          await markMessagesAsRead(msg._id);
+        }
+      }
     } catch (error) {
-      console.error('Error al cargar mensajes:', error);
+      console.error("Error al cargar mensajes:", error);
     }
   };
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    
-    const token = localStorage.getItem('token');
-    
+
+    const token = localStorage.getItem("token");
+
     // Verificar si hay token
     if (!token) {
-      Swal.fire('Error', 'No hay sesión activa. Por favor, inicia sesión nuevamente.', 'error');
-      navigate('/login');
+      Swal.fire(
+        "Error",
+        "No hay sesión activa. Por favor, inicia sesión nuevamente.",
+        "error"
+      );
+      navigate("/login");
       return;
     }
 
@@ -118,44 +131,45 @@ const Chat = () => {
 
     try {
       // Log para debugging
-      console.log('Token:', token.substring(0, 20) + '...'); // Solo mostrar parte del token
-      
-      const response = await fetch('http://localhost:4000/api/messages', {
-        method: 'POST',
+      console.log("Token:", token.substring(0, 20) + "..."); // Solo mostrar parte del token
+
+      const response = await fetch("http://localhost:4000/api/messages", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           content: newMessage.trim(),
-          subject: selectedSubject.id
-        })
+          subject: selectedSubject.id,
+        }),
       });
 
       // Log de la respuesta para debugging
-      console.log('Status:', response.status);
+      console.log("Status:", response.status);
       const data = await response.json();
-      console.log('Respuesta:', data);
+      console.log("Respuesta:", data);
 
       if (!response.ok) {
         if (response.status === 401) {
           // Si no está autorizado, redirigir al login
           localStorage.clear();
-          navigate('/login');
-          throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
+          navigate("/login");
+          throw new Error(
+            "Sesión expirada. Por favor, inicia sesión nuevamente."
+          );
         }
-        throw new Error(data.message || 'Error al enviar mensaje');
+        throw new Error(data.message || "Error al enviar mensaje");
       }
 
-      setMessages(prev => [...prev, data]);
-      setNewMessage('');
-
+      setMessages((prev) => [...prev, data]);
+      setNewMessage("");
     } catch (error) {
-      console.error('Error completo:', error);
+      console.error("Error completo:", error);
       Swal.fire({
-        icon: 'error',
-        title: 'Error al enviar mensaje',
-        text: error.message
+        icon: "error",
+        title: "Error al enviar mensaje",
+        text: error.message,
       });
     }
   };
@@ -164,18 +178,24 @@ const Chat = () => {
   const renderMessageStatus = (message) => {
     const getStatusIcon = (status) => {
       switch (status) {
-        case 'no_leido': return '○';
-        case 'visto': return '👁️';
-        case 'respondido': return '↩️';
-        case 'en_espera': return '⏳';
-        default: return '○';
+        case "no_leido":
+          return "○";
+        case "visto":
+          return "👁️";
+        case "respondido":
+          return "↩️";
+        case "en_espera":
+          return "⏳";
+        default:
+          return "○";
       }
     };
 
     return (
       <span className={`message-status ${message.status}`}>
         {getStatusIcon(message.status)}
-        {message.readBy?.length > 0 && message.status === 'visto' && 
+        {message.readBy?.length > 0 &&
+          message.status === "visto" &&
           ` (${message.readBy.length})`}
       </span>
     );
@@ -187,46 +207,49 @@ const Chat = () => {
   };
 
   // Función para marcar mensajes como leídos
-  const markMessagesAsRead = async (subjectId) => {
+  const markMessagesAsRead = async (messageId) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/messages/subject/${subjectId}/read`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
+      const response = await fetch(
+        `http://localhost:4000/api/messages/subject/${messageId}/read`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
         }
-      });
+      );
 
-      if (!response.ok) throw new Error('Error al marcar mensajes como leídos');
+      if (!response.ok) throw new Error("Error al marcar mensajes como leídos");
 
       const updatedMessages = await response.json();
-      console.log('Mensajes actualizados:', updatedMessages);
+      console.log("Mensajes actualizados:", updatedMessages);
 
       // Actualizar estados localmente
-      setMessages(prevMessages => 
-        prevMessages.map(msg => {
-          const updatedMsg = updatedMessages.find(m => m._id === msg._id);
+      setMessages((prevMessages) =>
+        prevMessages.map((msg) => {
+          const updatedMsg = updatedMessages.find((m) => m._id === msg._id);
           return updatedMsg || msg;
         })
       );
     } catch (error) {
-      console.error('Error:', error);
+      console.error("Error:", error);
     }
   };
 
   // Llamar a markMessagesAsRead cuando se selecciona una materia
   useEffect(() => {
-    if (selectedSubject) {
-      markMessagesAsRead(selectedSubject.id);
-    }
+    // if (selectedSubject) {
+    //   markMessagesAsRead(selectedSubject.id);
+    // }
   }, [selectedSubject]);
 
   // Componente de mensaje individual
   const MessageItem = ({ message }) => {
     const isOwnMessage = message.sender._id === currentUserId;
-    
+
     return (
-      <div className={`message ${isOwnMessage ? 'sent' : 'received'}`}>
+      <div className={`message ${isOwnMessage ? "sent" : "received"}`}>
         <div className="message-content">
           {!isOwnMessage && (
             <div className="message-sender">{message.sender.username}</div>
@@ -237,11 +260,11 @@ const Chat = () => {
               {new Date(message.createdAt).toLocaleTimeString()}
             </span>
             <span className={`message-status ${message.status}`}>
-              {message.status === 'visto' 
-                ? `Visto (${message.readBy?.length || 0})` 
-                : message.status === 'respondido'
-                ? 'Respondido'
-                : 'No leído'}
+              {message.status === "visto"
+                ? `Visto (${message.readBy?.length || 0})`
+                : message.status === "respondido"
+                ? "Respondido"
+                : "No leído"}
             </span>
           </div>
         </div>
@@ -251,31 +274,31 @@ const Chat = () => {
 
   const handleLogout = () => {
     Swal.fire({
-      title: '¿Cerrar sesión?',
-      text: '¿Estás seguro que deseas salir?',
-      icon: 'question',
+      title: "¿Cerrar sesión?",
+      text: "¿Estás seguro que deseas salir?",
+      icon: "question",
       showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Sí, cerrar sesión',
-      cancelButtonText: 'Cancelar'
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Sí, cerrar sesión",
+      cancelButtonText: "Cancelar",
     }).then((result) => {
       if (result.isConfirmed) {
         // Desconectar socket
         if (socketRef.current) {
           socketRef.current.disconnect();
         }
-        
+
         // Limpiar localStorage
         localStorage.clear();
-        
+
         // Redireccionar al LoginForm
-        navigate('/', { replace: true });
-        
+        navigate("/", { replace: true });
+
         Swal.fire({
-          icon: 'success',
-          title: '¡Sesión cerrada!',
-          text: 'Has cerrado sesión exitosamente'
+          icon: "success",
+          title: "¡Sesión cerrada!",
+          text: "Has cerrado sesión exitosamente",
         });
       }
     });
@@ -284,7 +307,11 @@ const Chat = () => {
   return (
     <div className="chat-container">
       {/* Panel de Materias */}
-      <div className={`subjects-panel ${!showSubjects && 'subjects-panel-collapsed'}`}>
+      <div
+        className={`subjects-panel ${
+          !showSubjects && "subjects-panel-collapsed"
+        }`}
+      >
         <div className="subjects-header">
           <h2>Materias</h2>
           <button onClick={handleLogout} className="logout-button">
@@ -292,15 +319,15 @@ const Chat = () => {
           </button>
         </div>
         <div className="subjects-list">
-          {subjects.map(subject => (
+          {subjects.map((subject) => (
             <div
               key={subject.id}
-              className={`subject-card ${selectedSubject?.id === subject.id ? 'selected' : ''}`}
+              className={`subject-card ${
+                selectedSubject?.id === subject.id ? "selected" : ""
+              }`}
               onClick={() => handleSubjectSelect(subject)}
             >
-              <div className="subject-avatar">
-                {subject.name.charAt(0)}
-              </div>
+              <div className="subject-avatar">{subject.name.charAt(0)}</div>
               <div className="subject-info">
                 <h3>{subject.name}</h3>
                 <p>{subject.teacher}</p>
@@ -314,7 +341,7 @@ const Chat = () => {
       {selectedSubject ? (
         <div className="chat-panel">
           <div className="chat-header">
-            <button 
+            <button
               className="toggle-subjects"
               onClick={() => setShowSubjects(!showSubjects)}
             >
@@ -328,9 +355,11 @@ const Chat = () => {
 
           <div className="messages-container">
             {messages.map((message, index) => (
-              <div 
+              <div
                 key={`${message._id}-${index}`}
-                className={`message ${message.sender._id === currentUserId ? 'sent' : 'received'}`}
+                className={`message ${
+                  message.sender._id === currentUserId ? "sent" : "received"
+                }`}
               >
                 <div className="message-content">
                   {message.sender._id !== currentUserId && (
@@ -344,11 +373,11 @@ const Chat = () => {
                       {new Date(message.createdAt).toLocaleTimeString()}
                     </span>
                     <span className={`message-status ${message.status}`}>
-                      {message.status === 'visto' 
-                        ? `Visto (${message.readBy?.length || 0})` 
-                        : message.status === 'respondido'
-                        ? 'Respondido'
-                        : 'No leído'}
+                      {message.status === "visto"
+                        ? `Visto (${message.readBy?.length || 0})`
+                        : message.status === "respondido"
+                        ? "Respondido"
+                        : "No leído"}
                     </span>
                   </div>
                 </div>

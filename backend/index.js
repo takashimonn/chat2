@@ -1,4 +1,5 @@
 require('dotenv').config();
+require('./models/User');
 const express = require('express');
 const cors = require('cors');
 const { createServer } = require('http');
@@ -32,8 +33,6 @@ app.use(express.json());
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
-  console.log('Usuario conectado:', socket.id);
-
   socket.on('join_subject', (subjectId) => {
     console.log(`Usuario ${socket.id} se unió a la materia ${subjectId}`);
     socket.join(`subject_${subjectId}`);
