@@ -9,12 +9,55 @@ import axiosInstance from '../utils/axiosConfig';
 const MessageItem = memo(({ message, currentUserId }) => {
   const isOwnMessage = message.sender._id === currentUserId;
 
+  const getPriorityIcon = (priority) => {
+    switch (priority) {
+      case "baja":
+        return "low_priority";
+      case "media":
+        return "drag_handle";
+      case "urgente":
+        return "priority_high";
+      default:
+        return "drag_handle";
+    }
+  };
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case "baja":
+        return "#4CAF50";
+      case "media":
+        return "#2196F3";
+      case "urgente":
+        return "#f44336";
+      default:
+        return "#2196F3";
+    }
+  };
+
+  const getPriorityText = (priority) => {
+    switch (priority) {
+      case "baja":
+        return "Baja";
+      case "media":
+        return "Media";
+      case "urgente":
+        return "Urgente";
+      default:
+        return "Media";
+    }
+  };
+
   return (
     <div className={`message ${isOwnMessage ? "sent" : "received"}`}>
       <div className="message-content">
         {!isOwnMessage && (
           <div className="message-sender">{message.sender.username}</div>
         )}
+        <div className="message-priority" style={{ color: getPriorityColor(message.priority) }}>
+          <span className="material-icons-round">{getPriorityIcon(message.priority)}</span>
+          <span className="priority-text">{getPriorityText(message.priority)}</span>
+        </div>
         <p>{message.content}</p>
         <div className="message-footer">
           <span className="message-time">
@@ -36,7 +79,7 @@ const MessageItem = memo(({ message, currentUserId }) => {
 // Componente de formulario de mensajes memo-izado
 const MessageForm = memo(({ onSendMessage }) => {
   const [newMessage, setNewMessage] = useState("");
-  const [priority, setPriority] = useState("normal");
+  const [priority, setPriority] = useState("media");
   const [showPriorityMenu, setShowPriorityMenu] = useState(false);
 
   const handleSubmit = (e) => {
@@ -48,11 +91,11 @@ const MessageForm = memo(({ onSendMessage }) => {
 
   const getPriorityIcon = (priority) => {
     switch (priority) {
-      case "low":
+      case "baja":
         return "low_priority";
-      case "normal":
+      case "media":
         return "drag_handle";
-      case "urgent":
+      case "urgente":
         return "priority_high";
       default:
         return "drag_handle";
@@ -61,11 +104,11 @@ const MessageForm = memo(({ onSendMessage }) => {
 
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case "low":
+      case "baja":
         return "#4CAF50";
-      case "normal":
+      case "media":
         return "#2196F3";
-      case "urgent":
+      case "urgente":
         return "#f44336";
       default:
         return "#2196F3";
@@ -80,6 +123,7 @@ const MessageForm = memo(({ onSendMessage }) => {
           className="priority-button"
           onClick={() => setShowPriorityMenu(!showPriorityMenu)}
           style={{ color: getPriorityColor(priority) }}
+          title="Prioridad"
         >
           <span className="material-icons-round">
             {getPriorityIcon(priority)}
@@ -90,7 +134,7 @@ const MessageForm = memo(({ onSendMessage }) => {
             <div
               className="priority-option"
               onClick={() => {
-                setPriority("low");
+                setPriority("baja");
                 setShowPriorityMenu(false);
               }}
             >
@@ -102,19 +146,19 @@ const MessageForm = memo(({ onSendMessage }) => {
             <div
               className="priority-option"
               onClick={() => {
-                setPriority("normal");
+                setPriority("media");
                 setShowPriorityMenu(false);
               }}
             >
               <span className="material-icons-round" style={{ color: "#2196F3" }}>
                 drag_handle
               </span>
-              <span>Normal</span>
+              <span>Media</span>
             </div>
             <div
               className="priority-option"
               onClick={() => {
-                setPriority("urgent");
+                setPriority("urgente");
                 setShowPriorityMenu(false);
               }}
             >
@@ -148,6 +192,8 @@ const Chat = () => {
   const [messages, setMessages] = useState([]);
   const [showSubjects, setShowSubjects] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [priorityFilter, setPriorityFilter] = useState("todos");
+  const [showFilterMenu, setShowFilterMenu] = useState(false);
   const socketRef = useRef(null);
   const navigate = useNavigate();
   const messagesEndRef = useRef(null);
@@ -317,6 +363,39 @@ const Chat = () => {
     navigate("/");
   };
 
+  const getFilterIcon = (filter) => {
+    switch (filter) {
+      case "todos":
+        return "filter_list";
+      case "baja":
+        return "low_priority";
+      case "media":
+        return "drag_handle";
+      case "urgente":
+        return "priority_high";
+      default:
+        return "filter_list";
+    }
+  };
+
+  const getFilterColor = (filter) => {
+    switch (filter) {
+      case "baja":
+        return "#4CAF50";
+      case "media":
+        return "#2196F3";
+      case "urgente":
+        return "#f44336";
+      default:
+        return "#757575";
+    }
+  };
+
+  const filteredMessages = messages.filter(message => {
+    if (priorityFilter === "todos") return true;
+    return message.priority === priorityFilter;
+  });
+
   return (
     <div className="chat-container">
       <div className={`subjects-panel ${!showSubjects ? 'subjects-panel-collapsed' : ''}`}>
@@ -361,6 +440,73 @@ const Chat = () => {
           ) : (
             <h2>Selecciona una materia para comenzar</h2>
           )}
+          {selectedSubject && (
+            <div className="filter-selector">
+              <button
+                type="button"
+                className="filter-button"
+                onClick={() => setShowFilterMenu(!showFilterMenu)}
+                title="Filtrar por prioridad"
+              >
+                <span className="material-icons-round">
+                  {getFilterIcon(priorityFilter)}
+                </span>
+                <span className="filter-text">Filtrar</span>
+              </button>
+              {showFilterMenu && (
+                <div className="filter-menu">
+                  <div
+                    className="filter-option"
+                    onClick={() => {
+                      setPriorityFilter("todos");
+                      setShowFilterMenu(false);
+                    }}
+                  >
+                    <span className="material-icons-round" style={{ color: "#757575" }}>
+                      filter_list
+                    </span>
+                    <span>Todos</span>
+                  </div>
+                  <div
+                    className="filter-option"
+                    onClick={() => {
+                      setPriorityFilter("baja");
+                      setShowFilterMenu(false);
+                    }}
+                  >
+                    <span className="material-icons-round" style={{ color: "#4CAF50" }}>
+                      low_priority
+                    </span>
+                    <span>Baja</span>
+                  </div>
+                  <div
+                    className="filter-option"
+                    onClick={() => {
+                      setPriorityFilter("media");
+                      setShowFilterMenu(false);
+                    }}
+                  >
+                    <span className="material-icons-round" style={{ color: "#2196F3" }}>
+                      drag_handle
+                    </span>
+                    <span>Media</span>
+                  </div>
+                  <div
+                    className="filter-option"
+                    onClick={() => {
+                      setPriorityFilter("urgente");
+                      setShowFilterMenu(false);
+                    }}
+                  >
+                    <span className="material-icons-round" style={{ color: "#f44336" }}>
+                      priority_high
+                    </span>
+                    <span>Urgente</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {selectedSubject ? (
@@ -374,7 +520,7 @@ const Chat = () => {
               ) : (
                 <>
                   <div style={{ flex: 1 }} />
-                  {messages.map((message) => (
+                  {filteredMessages.map((message) => (
                     <MessageItem 
                       key={message._id} 
                       message={message} 

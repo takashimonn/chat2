@@ -25,8 +25,8 @@ const messageSchema = new mongoose.Schema({
   },
   priority: {
     type: String,
-    enum: ['low', 'normal', 'urgent'],
-    default: 'normal'
+    enum: ['baja', 'media', 'urgente'],
+    default: 'media'
   },
   replyTo: {
     type: mongoose.Schema.Types.ObjectId,

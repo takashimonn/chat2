@@ -143,6 +143,7 @@
   align-items: center;
   height: 64px;
   min-height: 64px;
+  gap: 16px;
 }
 
 .toggle-subjects {
@@ -230,6 +231,8 @@
   padding: 12px;
   border-radius: 8px;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 .message.sent .message-content {
@@ -238,6 +241,37 @@
 
 .message.received .message-content {
   background: white;
+}
+
+.message-priority {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.message-priority:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.message-priority .material-icons-round {
+  font-size: 16px;
+}
+
+.priority-text {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* Ajuste del espaciado para mensajes con remitente */
@@ -249,6 +283,7 @@
 .message-content p {
   margin: 0;
   word-break: break-word;
+  padding-top: 24px; /* Espacio para la prioridad */
 }
 
 .message-footer {
@@ -364,6 +399,58 @@
   align-items: center;
   justify-content: center;
   transition: background-color 0.2s ease;
+  position: relative;
+}
+
+.priority-button::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  margin-bottom: 8px;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+}
+
+.priority-button::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.8);
+  margin-bottom: -4px;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+}
+
+.priority-button:hover::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
+.priority-button:hover::before {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
+.priority-button:not(:hover)::after,
+.priority-button:not(:hover)::before {
+  transform: translate(-50%, 10px);
 }
 
 .priority-button:hover {
@@ -525,4 +612,75 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Estilos para el filtro */
+.filter-selector {
+  position: relative;
+  margin-left: auto;
+}
+
+.filter-button {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  padding: 8px 16px;
+  cursor: pointer;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.filter-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.filter-text {
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.filter-button .material-icons-round {
+  font-size: 20px;
+}
+
+.filter-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  padding: 8px;
+  min-width: 180px;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.filter-option {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  gap: 12px;
+}
+
+.filter-option:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.filter-option span:last-child {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+.filter-option .material-icons-round {
+  font-size: 20px;
 }

@@ -27,13 +27,14 @@ const messageController = {
   // Crear nuevo mensaje
   createMessage: async (req, res) => {
     try {
-      const { content, subject } = req.body;
+      const { content, subject, priority } = req.body;
       const sender = req.user._id;
 
       const newMessage = new Message({
         content,
         subject,
         sender,
+        priority,
         status: 'no_leido',
         readBy: [sender]
       });
