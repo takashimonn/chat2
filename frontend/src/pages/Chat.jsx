@@ -1,9 +1,61 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import io from "socket.io-client";
 import "../styles/Chat.css";
 import axiosInstance from '../utils/axiosConfig';
+
+// Componente de mensaje individual memo-izado
+const MessageItem = memo(({ message, currentUserId }) => {
+  const isOwnMessage = message.sender._id === currentUserId;
+
+  return (
+    <div className={`message ${isOwnMessage ? "sent" : "received"}`}>
+      <div className="message-content">
+        {!isOwnMessage && (
+          <div className="message-sender">{message.sender.username}</div>
+        )}
+        <p>{message.content}</p>
+        <div className="message-footer">
+          <span className="message-time">
+            {new Date(message.createdAt).toLocaleTimeString()}
+          </span>
+          <span className={`message-status ${message.status}`}>
+            {message.status === "visto"
+              ? `Visto (${message.readBy?.length || 0})`
+              : message.status === "respondido"
+              ? "Respondido"
+              : "No leído"}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+// Componente de formulario de mensajes memo-izado
+const MessageForm = memo(({ onSendMessage }) => {
+  const [newMessage, setNewMessage] = useState("");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!newMessage.trim()) return;
+    onSendMessage(newMessage.trim());
+    setNewMessage("");
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="message-form">
+      <input
+        type="text"
+        value={newMessage}
+        onChange={(e) => setNewMessage(e.target.value)}
+        placeholder="Escribe un mensaje..."
+      />
+      <button type="submit">Enviar</button>
+    </form>
+  );
+});
 
 const Chat = () => {
   const [subjects, setSubjects] = useState([
@@ -14,13 +66,11 @@ const Chat = () => {
   ]);
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState("");
   const [showSubjects, setShowSubjects] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const socketRef = useRef(null);
   const navigate = useNavigate();
   const messagesEndRef = useRef(null);
-  const [replyingTo, setReplyingTo] = useState(null);
   const currentUserId = localStorage.getItem("userId");
 
   // Verificar autenticación al montar el componente
@@ -35,6 +85,11 @@ const Chat = () => {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  // Efecto para hacer scroll cuando cambian los mensajes
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -52,7 +107,6 @@ const Chat = () => {
 
     // Escuchar actualizaciones de estado de mensajes
     socketRef.current.on("message_status_updated", (updatedMessage) => {
-      console.log("Estado actualizado recibido:", updatedMessage);
       setMessages((prevMessages) =>
         prevMessages.map((msg) =>
           msg._id === updatedMessage._id ? updatedMessage : msg
@@ -62,8 +116,8 @@ const Chat = () => {
 
     // Escuchar nuevos mensajes
     socketRef.current.on("new_message", (newMessage) => {
-      console.log("Nuevo mensaje recibido:", newMessage);
       setMessages((prev) => [...prev, newMessage]);
+      scrollToBottom();
     });
 
     return () => {
@@ -105,20 +159,17 @@ const Chat = () => {
     }
   };
 
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    
-    if (!newMessage.trim() || !selectedSubject) return;
+  const handleSendMessage = async (messageContent) => {
+    if (!selectedSubject) return;
 
     try {
       const response = await axiosInstance.post('/messages', {
-        content: newMessage.trim(),
+        content: messageContent,
         subject: selectedSubject.id
       });
 
       setMessages(prev => [...prev, response.data]);
-      setNewMessage('');
-
+      scrollToBottom();
     } catch (error) {
       console.error('Error completo:', error);
       if (error.response?.status === 401) {
@@ -133,45 +184,11 @@ const Chat = () => {
     }
   };
 
-  // Renderizar el estado del mensaje
-  const renderMessageStatus = (message) => {
-    const getStatusIcon = (status) => {
-      switch (status) {
-        case "no_leido":
-          return "○";
-        case "visto":
-          return "👁️";
-        case "respondido":
-          return "↩️";
-        case "en_espera":
-          return "⏳";
-        default:
-          return "○";
-      }
-    };
-
-    return (
-      <span className={`message-status ${message.status}`}>
-        {getStatusIcon(message.status)}
-        {message.readBy?.length > 0 &&
-          message.status === "visto" &&
-          ` (${message.readBy.length})`}
-      </span>
-    );
-  };
-
-  const handleSubjectSelect = (subject) => {
-    setSelectedSubject(subject);
-  };
-
-  // Función para marcar mensajes como leídos
   const markMessagesAsRead = async (subjectId) => {
     try {
       const response = await axiosInstance.post(`/messages/subject/${subjectId}/read`);
       const updatedMessages = response.data;
-      console.log('Mensajes actualizados:', updatedMessages);
-
-      // Actualizar estados localmente
+      
       setMessages((prevMessages) =>
         prevMessages.map((msg) => {
           const updatedMsg = updatedMessages.find((m) => m._id === msg._id);
@@ -187,69 +204,17 @@ const Chat = () => {
     }
   };
 
-  // Componente de mensaje individual
-  const MessageItem = ({ message }) => {
-    const isOwnMessage = message.sender._id === currentUserId;
-
-    return (
-      <div className={`message ${isOwnMessage ? "sent" : "received"}`}>
-        <div className="message-content">
-          {!isOwnMessage && (
-            <div className="message-sender">{message.sender.username}</div>
-          )}
-          <p>{message.content}</p>
-          <div className="message-footer">
-            <span className="message-time">
-              {new Date(message.createdAt).toLocaleTimeString()}
-            </span>
-            <span className={`message-status ${message.status}`}>
-              {message.status === "visto"
-                ? `Visto (${message.readBy?.length || 0})`
-                : message.status === "respondido"
-                ? "Respondido"
-                : "No leído"}
-            </span>
-          </div>
-        </div>
-      </div>
-    );
+  const handleSubjectSelect = (subject) => {
+    setSelectedSubject(subject);
   };
 
   const handleLogout = () => {
-    Swal.fire({
-      title: "¿Cerrar sesión?",
-      text: "¿Estás seguro que deseas salir?",
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Sí, cerrar sesión",
-      cancelButtonText: "Cancelar",
-    }).then((result) => {
-      if (result.isConfirmed) {
-        // Desconectar socket
-        if (socketRef.current) {
-          socketRef.current.disconnect();
-        }
-
-        // Limpiar localStorage
-        localStorage.clear();
-
-        // Redireccionar al LoginForm
-        navigate("/", { replace: true });
-
-        Swal.fire({
-          icon: "success",
-          title: "¡Sesión cerrada!",
-          text: "Has cerrado sesión exitosamente",
-        });
-      }
-    });
+    localStorage.clear();
+    navigate("/");
   };
 
   return (
     <div className="chat-container">
-      {/* Panel de Materias */}
       <div className={`subjects-panel ${!showSubjects ? 'subjects-panel-collapsed' : ''}`}>
         <div className="subjects-header">
           <h2>Materias</h2>
@@ -276,7 +241,6 @@ const Chat = () => {
         </div>
       </div>
 
-      {/* Panel de Chat */}
       <div className="chat-panel">
         <div className="chat-header">
           <button 
@@ -304,21 +268,20 @@ const Chat = () => {
                   <p>Cargando mensajes...</p>
                 </div>
               ) : (
-                messages.map((message) => (
-                  <MessageItem key={message._id} message={message} />
-                ))
+                <>
+                  <div style={{ flex: 1 }} />
+                  {messages.map((message) => (
+                    <MessageItem 
+                      key={message._id} 
+                      message={message} 
+                      currentUserId={currentUserId}
+                    />
+                  ))}
+                </>
               )}
               <div ref={messagesEndRef} />
             </div>
-            <form onSubmit={handleSendMessage} className="message-form">
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Escribe un mensaje..."
-              />
-              <button type="submit">Enviar</button>
-            </form>
+            <MessageForm onSendMessage={handleSendMessage} />
           </>
         ) : (
           <div className="no-chat-selected">
