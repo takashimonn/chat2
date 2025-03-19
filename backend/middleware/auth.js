@@ -15,8 +15,15 @@ const auth = async (req, res, next) => {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       console.log('Token decodificado:', decoded);
-      req.user = decoded;
-      console.log('Usuario autenticado:', decoded);
+      
+      // Obtener el usuario completo de la base de datos
+      const user = await User.findById(decoded.id);
+      if (!user) {
+        throw new Error('Usuario no encontrado');
+      }
+      
+      req.user = user;
+      console.log('Usuario autenticado:', user);
       next();
     } catch (error) {
       console.log('Token inválido:', error.message);

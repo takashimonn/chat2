@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import '../styles/LoginForm.css';
-
+import axiosInstance from '../utils/axiosConfig';
 
 const LoginForm = () => {
   const [formData, setFormData] = useState({
@@ -23,17 +23,10 @@ const LoginForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:4000/api/users/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-      });
+      const response = await axiosInstance.post('/users/login', formData);
+      const data = response.data;
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (response.status === 200) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         
@@ -46,15 +39,13 @@ const LoginForm = () => {
         });
         
         navigate('/chat');
-      } else {
-        throw new Error(data.message || 'Error al iniciar sesión');
       }
     } catch (error) {
       console.error('Error al iniciar sesión:', error);
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: error.message || 'Error al iniciar sesión'
+        text: error.response?.data?.message || 'Error al iniciar sesión'
       });
     }
   };

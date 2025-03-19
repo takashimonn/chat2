@@ -8,7 +8,7 @@ const userController = {
   register: async (req, res) => {
 
     try {
-      const { email, password, name } = req.body;
+      const { email, password, username } = req.body;
 
       const userExists = await User.findOne({ email });
 
@@ -22,7 +22,7 @@ const userController = {
       const user = new User({
         email,
         password,
-        name
+        username
       });
 
       await user.save();
@@ -39,7 +39,7 @@ const userController = {
         user: {
           id: user._id,
           email: user.email,
-          name: user.name
+          username: user.username
         },
         token
       });
@@ -62,17 +62,18 @@ const userController = {
         return res.status(401).json({ message: 'Credenciales inválidas' });
       }
 
-      // Token JWT sin clave secreta
+      // Generar token JWT con la misma clave secreta que en el registro
       const token = jwt.sign(
-        { id: user._id },
-        '', // Sin clave secreta
-        { algorithm: 'none' } // Especificamos que no use algoritmo de encriptación
+        { id: user._id, email: user.email },
+        process.env.JWT_SECRET,
+        { expiresIn: '24h' }
       );
 
       res.json({
         message: 'Login exitoso',
         user: {
           id: user._id,
+          email: user.email,
           username: user.username
         },
         token

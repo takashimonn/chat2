@@ -3,17 +3,19 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 //import axios from 'axios';
 import Swal from 'sweetalert2';
+import '../styles/LoginForm.css';
 
 const Register = () => {
   const [formData, setFormData] = useState({
     email: '',
+    username: '',
     password: '',
     confirmPassword: ''
   });
 
   const navigate = useNavigate();
 
-  const { email, password, confirmPassword } = formData;
+  const { email, username, password, confirmPassword } = formData;
 
   const handleLoginClick = (e) => {
     e.preventDefault();
@@ -32,16 +34,15 @@ const Register = () => {
     e.preventDefault();
     
     if (formData.password !== formData.confirmPassword) {
-      alert('Las contraseñas no coinciden');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Las contraseñas no coinciden'
+      });
       return;
     }
 
     try {
-      console.log('Enviando datos al servidor:', {
-        email: formData.email,
-        password: formData.password
-      });
-
       const response = await fetch('http://localhost:4000/api/users/register', {
         method: 'POST',
         headers: {
@@ -49,106 +50,129 @@ const Register = () => {
         },
         body: JSON.stringify({
           email: formData.email,
+          username: formData.username,
           password: formData.password
         })
       });
 
-      console.log('Respuesta recibida:', response);
       const data = await response.json();
-      console.log('Datos recibidos:', data);
 
       if (response.ok) {
-        alert('Usuario registrado exitosamente');
+        await Swal.fire({
+          icon: 'success',
+          title: '¡Registro exitoso!',
+          text: 'Tu cuenta ha sido creada correctamente',
+          timer: 1500,
+          showConfirmButton: false
+        });
         navigate('/');
       } else {
-        alert(data.message || 'Error al registrar usuario');
+        throw new Error(data.message || 'Error al registrar usuario');
       }
     } catch (error) {
       console.error('Error completo:', error);
-      alert('Error al conectar con el servidor');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.message || 'Error al registrar usuario'
+      });
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Crear cuenta
-          </h2>
+    <div className="login-container">
+      <div className="login-header">
+        <h1>Sistema de Control Escolar</h1>
+        <p>Portal de Comunicación</p>
+      </div>
+
+      <div className="login-card">
+        <div className="card-header">
+          <h2>Crear Nueva Cuenta</h2>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="email" className="sr-only">
-                Correo Electrónico
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Correo Electrónico"
-                value={email}
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Contraseña
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Contraseña"
-                value={password}
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <label htmlFor="confirmPassword" className="sr-only">
-                Confirmar Contraseña
-              </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Confirmar Contraseña"
-                value={confirmPassword}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
 
-          <div>
-            <button
-              type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Registrarse
+        <div className="card-body">
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label htmlFor="email">Correo Institucional</label>
+              <div className="input-group">
+                <span className="input-icon email-icon"></span>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={handleChange}
+                  placeholder="usuario@institucion.edu.mx"
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="username">Nombre de Usuario</label>
+              <div className="input-group">
+                <span className="input-icon user-icon"></span>
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  required
+                  value={username}
+                  onChange={handleChange}
+                  placeholder="Nombre de usuario"
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="password">Contraseña</label>
+              <div className="input-group">
+                <span className="input-icon password-icon"></span>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="confirmPassword">Confirmar Contraseña</label>
+              <div className="input-group">
+                <span className="input-icon password-icon"></span>
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+
+            <button type="submit" className="submit-button">
+              Crear Cuenta
             </button>
-          </div>
-        </form>
 
-        <div className="text-center">
-          <p className="text-sm text-gray-600">
-            ¿Ya tienes una cuenta?{' '}
-            <a 
-              href="/"
-              onClick={handleLoginClick}
-              className="font-medium text-indigo-600 hover:text-indigo-500"
-            >
-              Inicia sesión aquí
-            </a>
-          </p>
+            <div className="form-links">
+              <a href="/" onClick={handleLoginClick} className="login-link">
+                ¿Ya tienes una cuenta? Inicia sesión
+              </a>
+            </div>
+          </form>
         </div>
       </div>
+
+      <footer className="login-footer">
+        <p>© 2024 Sistema de Control Escolar. Todos los derechos reservados.</p>
+      </footer>
     </div>
   );
 };
