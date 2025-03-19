@@ -748,15 +748,49 @@
   background: #075e54;
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 24px;
-  font-size: 0.875rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .message-form button[type="submit"]:hover {
   background: #05423b;
+  transform: scale(1.05);
+}
+
+.message-form button[type="submit"] .material-icons-round {
+  font-size: 20px;
+  margin: 0 0 0 2px;
+}
+
+.message-form button[type="submit"]::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  margin-bottom: 8px;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+}
+
+.message-form button[type="submit"]:hover::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
 }
 
 /* Responsive */

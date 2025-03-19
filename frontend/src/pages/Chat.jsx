@@ -270,7 +270,9 @@ const MessageForm = memo(({ onSendMessage, replyingTo, onCancelReply }) => {
           onChange={(e) => setNewMessage(e.target.value)}
           placeholder="Escribe un mensaje..."
         />
-        <button type="submit">Enviar</button>
+        <button type="submit" title="Enviar mensaje">
+          <span className="material-icons-round">send</span>
+        </button>
       </div>
     </form>
   );
