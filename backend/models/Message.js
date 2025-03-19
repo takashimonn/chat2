@@ -20,7 +20,7 @@ const messageSchema = new mongoose.Schema({
   }],
   status: {
     type: String,
-    enum: ['no_leido', 'visto', 'respondido'],
+    enum: ['no_leido', 'visto', 'respondido', 'en_espera'],
     default: 'no_leido'
   },
   priority: {
@@ -35,6 +35,27 @@ const messageSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true
+});
+
+// Middleware para popular automáticamente el campo replyTo
+messageSchema.pre('find', function() {
+  this.populate({
+    path: 'replyTo',
+    populate: {
+      path: 'sender',
+      select: 'username'
+    }
+  });
+});
+
+messageSchema.pre('findOne', function() {
+  this.populate({
+    path: 'replyTo',
+    populate: {
+      path: 'sender',
+      select: 'username'
+    }
+  });
 });
 
 module.exports = mongoose.model('Message', messageSchema);

@@ -7,15 +7,13 @@ import axiosInstance from '../utils/axiosConfig';
 import React from "react";
 
 // Componente de mensaje individual memo-izado
-const MessageItem = memo(({ message, currentUserId, currentUsername }) => {
-  const isOwnMessage = message.sender.username === currentUsername;
-  console.log('Debug message alignment:', {
-    messageId: message._id,
-    senderUsername: message.sender.username,
-    currentUsername: currentUsername,
-    isOwnMessage: isOwnMessage
-  });
-  const [showStatusMenu, setShowStatusMenu] = useState(false);
+const MessageItem = memo(({ message: initialMessage, currentUserId, currentUsername, socketRef, onReply }) => {
+  const isOwnMessage = initialMessage.sender.username === currentUsername;
+  const [message, setMessage] = useState(initialMessage);
+
+  useEffect(() => {
+    setMessage(initialMessage);
+  }, [initialMessage]);
 
   const getPriorityIcon = (priority) => {
     switch (priority) {
@@ -56,22 +54,6 @@ const MessageItem = memo(({ message, currentUserId, currentUsername }) => {
     }
   };
 
-  const handleStatusChange = async (newStatus) => {
-    try {
-      const response = await axiosInstance.patch(`/messages/${message._id}/status`, {
-        status: newStatus
-      });
-      setShowStatusMenu(false);
-    } catch (error) {
-      console.error('Error al actualizar estado:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'No se pudo actualizar el estado del mensaje'
-      });
-    }
-  };
-
   const getStatusIcon = (status) => {
     switch (status) {
       case "visto":
@@ -105,17 +87,34 @@ const MessageItem = memo(({ message, currentUserId, currentUsername }) => {
   return (
     <div className={`message ${isOwnMessage ? "sent" : "received"}`}>
       <div className="message-content">
+        {message.replyTo && (
+          <div className="reply-preview">
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+              <div className="reply-preview-sender">
+                {message.replyTo.sender.username === currentUsername ? "Tú" : message.replyTo.sender.username}
+              </div>
+              <div className="reply-preview-content">{message.replyTo.content}</div>
+            </div>
+          </div>
+        )}
         {!isOwnMessage && (
           <div className="message-sender">{message.sender.username}</div>
         )}
-        {!isOwnMessage && (
-          <div className="message-priority" style={{ color: getPriorityColor(message.priority) }}>
-            <span className="material-icons-round">{getPriorityIcon(message.priority)}</span>
-            <span className="priority-text">{getPriorityText(message.priority)}</span>
-          </div>
-        )}
         <p>{message.content}</p>
+        <button 
+          className="reply-button"
+          onClick={() => onReply(message)}
+          title="Responder"
+        >
+          <span className="material-icons-round">reply</span>
+        </button>
         <div className="message-footer">
+          {!isOwnMessage && (
+            <div className="message-priority" style={{ color: getPriorityColor(message.priority) }}>
+              <span className="material-icons-round">{getPriorityIcon(message.priority)}</span>
+              <span className="priority-text">{getPriorityText(message.priority)}</span>
+            </div>
+          )}
           <span className="message-time">
             {new Date(message.createdAt).toLocaleTimeString()}
           </span>
@@ -125,44 +124,25 @@ const MessageItem = memo(({ message, currentUserId, currentUsername }) => {
               <span className="priority-text">{getPriorityText(message.priority)}</span>
             </div>
           )}
-          <div className="message-status-container">
-            <button
-              className={`message-status ${message.status}`}
-              onClick={() => setShowStatusMenu(!showStatusMenu)}
-              style={{ color: getStatusColor(message.status) }}
-            >
-              <span className="material-icons-round" style={{ fontSize: '16px', marginRight: '4px' }}>
-                {getStatusIcon(message.status)}
-              </span>
-              {message.status === "visto"
-                ? `Visto (${message.readBy?.length || 0})`
-                : message.status === "respondido"
-                ? "Respondido"
-                : message.status === "en_espera"
-                ? "En espera"
-                : "No leído"}
-            </button>
-            {showStatusMenu && (
-              <div className="status-menu">
-                <div className="status-option" onClick={() => handleStatusChange("no_leido")}>
-                  <span className="material-icons-round">mark_email_unread</span>
-                  <span>No leído</span>
-                </div>
-                <div className="status-option" onClick={() => handleStatusChange("visto")}>
-                  <span className="material-icons-round">visibility</span>
-                  <span>Visto</span>
-                </div>
-                <div className="status-option" onClick={() => handleStatusChange("respondido")}>
-                  <span className="material-icons-round">reply</span>
-                  <span>Respondido</span>
-                </div>
-                <div className="status-option" onClick={() => handleStatusChange("en_espera")}>
-                  <span className="material-icons-round">schedule</span>
-                  <span>En espera</span>
-                </div>
+          {isOwnMessage && (
+            <div className="message-status-container">
+              <div
+                className={`message-status ${message.status}`}
+                style={{ color: getStatusColor(message.status), cursor: 'default' }}
+              >
+                <span className="material-icons-round" style={{ fontSize: '16px', marginRight: '4px' }}>
+                  {getStatusIcon(message.status)}
+                </span>
+                {message.status === "visto"
+                  ? `Visto (${message.readBy?.filter(username => username !== message.sender.username).length || 0})`
+                  : message.status === "respondido"
+                  ? "Respondido"
+                  : message.status === "en_espera"
+                  ? "En espera"
+                  : "No leído"}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -170,7 +150,7 @@ const MessageItem = memo(({ message, currentUserId, currentUsername }) => {
 });
 
 // Componente de formulario de mensajes memo-izado
-const MessageForm = memo(({ onSendMessage }) => {
+const MessageForm = memo(({ onSendMessage, replyingTo, onCancelReply }) => {
   const [newMessage, setNewMessage] = useState("");
   const [priority, setPriority] = useState("media");
   const [showPriorityMenu, setShowPriorityMenu] = useState(false);
@@ -178,8 +158,9 @@ const MessageForm = memo(({ onSendMessage }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
-    onSendMessage(newMessage.trim(), priority);
+    onSendMessage(newMessage.trim(), priority, replyingTo);
     setNewMessage("");
+    if (onCancelReply) onCancelReply();
   };
 
   const getPriorityIcon = (priority) => {
@@ -209,67 +190,88 @@ const MessageForm = memo(({ onSendMessage }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="message-form">
-      <div className="priority-selector">
-        <button
-          type="button"
-          className="priority-button"
-          onClick={() => setShowPriorityMenu(!showPriorityMenu)}
-          style={{ color: getPriorityColor(priority) }}
-          title="Prioridad"
-        >
-          <span className="material-icons-round">
-            {getPriorityIcon(priority)}
-          </span>
-        </button>
-        {showPriorityMenu && (
-          <div className="priority-menu">
-            <div
-              className="priority-option"
-              onClick={() => {
-                setPriority("baja");
-                setShowPriorityMenu(false);
-              }}
-            >
-              <span className="material-icons-round" style={{ color: "#4CAF50" }}>
-                low_priority
-              </span>
-              <span>Baja</span>
+    <form onSubmit={handleSubmit} className={`message-form ${replyingTo ? 'replying' : ''}`}>
+      {replyingTo && (
+        <div className="reply-preview">
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+            <div className="reply-preview-sender">
+              Respondiendo a {replyingTo.sender.username}
             </div>
-            <div
-              className="priority-option"
-              onClick={() => {
-                setPriority("media");
-                setShowPriorityMenu(false);
-              }}
-            >
-              <span className="material-icons-round" style={{ color: "#2196F3" }}>
-                drag_handle
-              </span>
-              <span>Media</span>
-            </div>
-            <div
-              className="priority-option"
-              onClick={() => {
-                setPriority("urgente");
-                setShowPriorityMenu(false);
-              }}
-            >
-              <span className="material-icons-round" style={{ color: "#f44336" }}>
-                priority_high
-              </span>
-              <span>Urgente</span>
+            <div className="reply-preview-content">
+              {replyingTo.content}
             </div>
           </div>
-        )}
+          <button
+            type="button"
+            className="cancel-reply"
+            onClick={onCancelReply}
+          >
+            <span className="material-icons-round">close</span>
+          </button>
+        </div>
+      )}
+      <div className="form-controls">
+        <div className="priority-selector">
+          <button
+            type="button"
+            className="priority-button"
+            onClick={() => setShowPriorityMenu(!showPriorityMenu)}
+            style={{ color: getPriorityColor(priority) }}
+            title="Prioridad"
+          >
+            <span className="material-icons-round">
+              {getPriorityIcon(priority)}
+            </span>
+          </button>
+          {showPriorityMenu && (
+            <div className="priority-menu">
+              <div
+                className="priority-option"
+                onClick={() => {
+                  setPriority("baja");
+                  setShowPriorityMenu(false);
+                }}
+              >
+                <span className="material-icons-round" style={{ color: "#4CAF50" }}>
+                  low_priority
+                </span>
+                <span>Baja</span>
+              </div>
+              <div
+                className="priority-option"
+                onClick={() => {
+                  setPriority("media");
+                  setShowPriorityMenu(false);
+                }}
+              >
+                <span className="material-icons-round" style={{ color: "#2196F3" }}>
+                  drag_handle
+                </span>
+                <span>Media</span>
+              </div>
+              <div
+                className="priority-option"
+                onClick={() => {
+                  setPriority("urgente");
+                  setShowPriorityMenu(false);
+                }}
+              >
+                <span className="material-icons-round" style={{ color: "#f44336" }}>
+                  priority_high
+                </span>
+                <span>Urgente</span>
+              </div>
+            </div>
+          )}
+        </div>
+        <input
+          type="text"
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          placeholder="Escribe un mensaje..."
+        />
+        <button type="submit">Enviar</button>
       </div>
-      <input
-        type="text"
-        value={newMessage}
-        onChange={(e) => setNewMessage(e.target.value)}
-        placeholder="Escribe un mensaje..."
-      />
-      <button type="submit">Enviar</button>
     </form>
   );
 });
@@ -287,12 +289,12 @@ const Chat = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [priorityFilter, setPriorityFilter] = useState("todos");
   const [showFilterMenu, setShowFilterMenu] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null);
   const socketRef = useRef(null);
   const navigate = useNavigate();
   const messagesEndRef = useRef(null);
   const currentUserId = localStorage.getItem("userId");
   const currentUsername = localStorage.getItem("username");
-  console.log('Usuario en sesión:', currentUsername);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -339,14 +341,15 @@ const Chat = () => {
     socketRef.current.on("message_status_updated", (updatedMessage) => {
       setMessages((prevMessages) =>
         prevMessages.map((msg) =>
-          msg._id === updatedMessage._id ? updatedMessage : msg
+          msg._id === updatedMessage.messageId 
+            ? { ...msg, status: updatedMessage.newStatus }
+            : msg
         )
       );
     });
 
     // Escuchar nuevos mensajes
     socketRef.current.on("new_message", (newMessage) => {
-      // Solo agregar el mensaje si no existe ya
       setMessages((prev) => {
         const messageExists = prev.some(msg => msg._id === newMessage._id);
         if (messageExists) return prev;
@@ -377,16 +380,22 @@ const Chat = () => {
     setIsLoading(true);
     
     try {
-      // Cargar mensajes y marcarlos como leídos en paralelo
-      const [messagesResponse] = await Promise.all([
-        axiosInstance.get(`/messages/subject/${selectedSubject.id}`),
-        axiosInstance.post(`/messages/subject/${selectedSubject.id}/read`)
-      ]);
+      // Primero cargar los mensajes
+      const messagesResponse = await axiosInstance.get(`/messages/subject/${selectedSubject.id}`);
       
-      // Filtrar duplicados de manera más eficiente usando Set
+      // Filtrar duplicados
       const uniqueMessages = Array.from(
         new Map(messagesResponse.data.map(msg => [msg._id, msg])).values()
       );
+      
+      // Marcar como leídos solo los mensajes que no son del usuario actual
+      const messagesToMarkAsRead = uniqueMessages.filter(
+        msg => msg.sender.username !== currentUsername
+      );
+      
+      if (messagesToMarkAsRead.length > 0) {
+        await axiosInstance.post(`/messages/subject/${selectedSubject.id}/read`);
+      }
       
       setMessages(uniqueMessages);
     } catch (error) {
@@ -397,27 +406,34 @@ const Chat = () => {
       }
     } finally {
       setIsLoading(false);
-      // Asegurar que estamos al final después de cargar
       requestAnimationFrame(() => scrollToBottom(false));
     }
   };
 
-  const handleSendMessage = async (messageContent, priority) => {
+  const handleSendMessage = async (messageContent, priority, replyTo = null) => {
     if (!selectedSubject) return;
 
     try {
       const response = await axiosInstance.post('/messages', {
         content: messageContent,
         subject: selectedSubject.id,
-        priority: priority
+        priority: priority,
+        replyTo: replyTo?._id
       });
+
+      // Si es una respuesta, actualizar el estado del mensaje original
+      if (replyTo) {
+        await axiosInstance.patch(`/messages/${replyTo._id}/status`, {
+          status: 'respondido'
+        });
+      }
 
       setMessages(prev => {
         const messageExists = prev.some(msg => msg._id === response.data._id);
         if (messageExists) return prev;
         return [...prev, response.data];
       });
-      // Usar scroll suave solo para mensajes nuevos
+      
       scrollToBottom(true);
     } catch (error) {
       console.error('Error completo:', error);
@@ -431,6 +447,14 @@ const Chat = () => {
         text: error.response?.data?.message || 'Error al enviar mensaje'
       });
     }
+  };
+
+  const handleReply = (message) => {
+    setReplyingTo(message);
+  };
+
+  const handleCancelReply = () => {
+    setReplyingTo(null);
   };
 
   const handleSubjectSelect = (subject) => {
@@ -498,6 +522,14 @@ const Chat = () => {
       return matchesPriority && matchesSearch;
     });
   }, [messages, priorityFilter, searchQuery]);
+
+  const handleMessageStatusChange = (updatedMessage) => {
+    setMessages(prevMessages =>
+      prevMessages.map(msg =>
+        msg._id === updatedMessage._id ? updatedMessage : msg
+      )
+    );
+  };
 
   return (
     <div className="chat-container">
@@ -658,6 +690,8 @@ const Chat = () => {
                       message={message} 
                       currentUserId={currentUserId}
                       currentUsername={currentUsername}
+                      socketRef={socketRef}
+                      onReply={handleReply}
                     />
                   ))}
                 </>
@@ -677,7 +711,11 @@ const Chat = () => {
               )}
               <div ref={messagesEndRef} />
             </div>
-            <MessageForm onSendMessage={handleSendMessage} />
+            <MessageForm 
+              onSendMessage={handleSendMessage} 
+              replyingTo={replyingTo}
+              onCancelReply={handleCancelReply}
+            />
           </>
         ) : (
           <div className="no-chat-selected">
