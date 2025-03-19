@@ -4,10 +4,18 @@ import Swal from "sweetalert2";
 import io from "socket.io-client";
 import "../styles/Chat.css";
 import axiosInstance from '../utils/axiosConfig';
+import React from "react";
 
 // Componente de mensaje individual memo-izado
-const MessageItem = memo(({ message, currentUserId }) => {
-  const isOwnMessage = message.sender._id === currentUserId;
+const MessageItem = memo(({ message, currentUserId, currentUsername }) => {
+  const isOwnMessage = message.sender.username === currentUsername;
+  console.log('Debug message alignment:', {
+    messageId: message._id,
+    senderUsername: message.sender.username,
+    currentUsername: currentUsername,
+    isOwnMessage: isOwnMessage
+  });
+  const [showStatusMenu, setShowStatusMenu] = useState(false);
 
   const getPriorityIcon = (priority) => {
     switch (priority) {
@@ -48,28 +56,113 @@ const MessageItem = memo(({ message, currentUserId }) => {
     }
   };
 
+  const handleStatusChange = async (newStatus) => {
+    try {
+      const response = await axiosInstance.patch(`/messages/${message._id}/status`, {
+        status: newStatus
+      });
+      setShowStatusMenu(false);
+    } catch (error) {
+      console.error('Error al actualizar estado:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo actualizar el estado del mensaje'
+      });
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "visto":
+        return "visibility";
+      case "no_leido":
+        return "mark_email_unread";
+      case "respondido":
+        return "reply";
+      case "en_espera":
+        return "schedule";
+      default:
+        return "mark_email_unread";
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "visto":
+        return "#1976d2";
+      case "no_leido":
+        return "#666";
+      case "respondido":
+        return "#2e7d32";
+      case "en_espera":
+        return "#ed6c02";
+      default:
+        return "#666";
+    }
+  };
+
   return (
     <div className={`message ${isOwnMessage ? "sent" : "received"}`}>
       <div className="message-content">
         {!isOwnMessage && (
           <div className="message-sender">{message.sender.username}</div>
         )}
-        <div className="message-priority" style={{ color: getPriorityColor(message.priority) }}>
-          <span className="material-icons-round">{getPriorityIcon(message.priority)}</span>
-          <span className="priority-text">{getPriorityText(message.priority)}</span>
-        </div>
+        {!isOwnMessage && (
+          <div className="message-priority" style={{ color: getPriorityColor(message.priority) }}>
+            <span className="material-icons-round">{getPriorityIcon(message.priority)}</span>
+            <span className="priority-text">{getPriorityText(message.priority)}</span>
+          </div>
+        )}
         <p>{message.content}</p>
         <div className="message-footer">
           <span className="message-time">
             {new Date(message.createdAt).toLocaleTimeString()}
           </span>
-          <span className={`message-status ${message.status}`}>
-            {message.status === "visto"
-              ? `Visto (${message.readBy?.length || 0})`
-              : message.status === "respondido"
-              ? "Respondido"
-              : "No leído"}
-          </span>
+          {isOwnMessage && (
+            <div className="message-priority" style={{ color: getPriorityColor(message.priority) }}>
+              <span className="material-icons-round">{getPriorityIcon(message.priority)}</span>
+              <span className="priority-text">{getPriorityText(message.priority)}</span>
+            </div>
+          )}
+          <div className="message-status-container">
+            <button
+              className={`message-status ${message.status}`}
+              onClick={() => setShowStatusMenu(!showStatusMenu)}
+              style={{ color: getStatusColor(message.status) }}
+            >
+              <span className="material-icons-round" style={{ fontSize: '16px', marginRight: '4px' }}>
+                {getStatusIcon(message.status)}
+              </span>
+              {message.status === "visto"
+                ? `Visto (${message.readBy?.length || 0})`
+                : message.status === "respondido"
+                ? "Respondido"
+                : message.status === "en_espera"
+                ? "En espera"
+                : "No leído"}
+            </button>
+            {showStatusMenu && (
+              <div className="status-menu">
+                <div className="status-option" onClick={() => handleStatusChange("no_leido")}>
+                  <span className="material-icons-round">mark_email_unread</span>
+                  <span>No leído</span>
+                </div>
+                <div className="status-option" onClick={() => handleStatusChange("visto")}>
+                  <span className="material-icons-round">visibility</span>
+                  <span>Visto</span>
+                </div>
+                <div className="status-option" onClick={() => handleStatusChange("respondido")}>
+                  <span className="material-icons-round">reply</span>
+                  <span>Respondido</span>
+                </div>
+                <div className="status-option" onClick={() => handleStatusChange("en_espera")}>
+                  <span className="material-icons-round">schedule</span>
+                  <span>En espera</span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -198,6 +291,8 @@ const Chat = () => {
   const navigate = useNavigate();
   const messagesEndRef = useRef(null);
   const currentUserId = localStorage.getItem("userId");
+  const currentUsername = localStorage.getItem("username");
+  console.log('Usuario en sesión:', currentUsername);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -280,18 +375,20 @@ const Chat = () => {
     if (!selectedSubject) return;
 
     setIsLoading(true);
-    scrollToBottom(false); // Scroll inmediato antes de cargar
     
     try {
-      const response = await axiosInstance.get(`/messages/subject/${selectedSubject.id}`);
-      const data = response.data;
+      // Cargar mensajes y marcarlos como leídos en paralelo
+      const [messagesResponse] = await Promise.all([
+        axiosInstance.get(`/messages/subject/${selectedSubject.id}`),
+        axiosInstance.post(`/messages/subject/${selectedSubject.id}/read`)
+      ]);
       
-      setMessages(data.filter((msg, index, self) => 
-        index === self.findIndex(m => m._id === msg._id)
-      ));
+      // Filtrar duplicados de manera más eficiente usando Set
+      const uniqueMessages = Array.from(
+        new Map(messagesResponse.data.map(msg => [msg._id, msg])).values()
+      );
       
-      // Marcar mensajes como leídos
-      await markMessagesAsRead(selectedSubject.id);
+      setMessages(uniqueMessages);
     } catch (error) {
       console.error('Error al cargar mensajes:', error);
       if (error.response?.status === 401) {
@@ -301,7 +398,7 @@ const Chat = () => {
     } finally {
       setIsLoading(false);
       // Asegurar que estamos al final después de cargar
-      setTimeout(() => scrollToBottom(false), 0);
+      requestAnimationFrame(() => scrollToBottom(false));
     }
   };
 
@@ -336,33 +433,32 @@ const Chat = () => {
     }
   };
 
-  const markMessagesAsRead = async (subjectId) => {
-    try {
-      const response = await axiosInstance.post(`/messages/subject/${subjectId}/read`);
-      const updatedMessages = response.data;
-      
-      setMessages((prevMessages) =>
-        prevMessages.map((msg) => {
-          const updatedMsg = updatedMessages.find((m) => m._id === msg._id);
-          return updatedMsg || msg;
-        })
-      );
-    } catch (error) {
-      console.error('Error:', error);
-      if (error.response?.status === 401) {
-        localStorage.clear();
-        navigate('/');
-      }
-    }
-  };
-
   const handleSubjectSelect = (subject) => {
     setSelectedSubject(subject);
   };
 
   const handleLogout = () => {
-    localStorage.clear();
-    navigate("/");
+    Swal.fire({
+      title: '¿Cerrar sesión?',
+      text: '¿Estás seguro que deseas cerrar sesión?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ff4d4d',
+      cancelButtonColor: '#075e54',
+      confirmButtonText: 'Sí, cerrar sesión',
+      cancelButtonText: 'Cancelar',
+      background: '#fff',
+      iconColor: '#ff4d4d',
+      customClass: {
+        confirmButton: 'swal-confirm-button',
+        cancelButton: 'swal-cancel-button'
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        localStorage.clear();
+        navigate("/");
+      }
+    });
   };
 
   const getFilterIcon = (filter) => {
@@ -393,12 +489,15 @@ const Chat = () => {
     }
   };
 
-  const filteredMessages = messages.filter(message => {
-    let matchesPriority = priorityFilter === "todos" || message.priority === priorityFilter;
-    let matchesSearch = !searchQuery || 
-      message.content.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesPriority && matchesSearch;
-  });
+  // Optimizar el filtrado de mensajes usando useMemo
+  const filteredMessages = React.useMemo(() => {
+    return messages.filter(message => {
+      let matchesPriority = priorityFilter === "todos" || message.priority === priorityFilter;
+      let matchesSearch = !searchQuery || 
+        message.content.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesPriority && matchesSearch;
+    });
+  }, [messages, priorityFilter, searchQuery]);
 
   return (
     <div className="chat-container">
@@ -550,7 +649,7 @@ const Chat = () => {
                   <span className="material-icons-round loading-icon">sync</span>
                   <p>Cargando mensajes...</p>
                 </div>
-              ) : (
+              ) : filteredMessages.length > 0 ? (
                 <>
                   <div style={{ flex: 1 }} />
                   {filteredMessages.map((message) => (
@@ -558,9 +657,23 @@ const Chat = () => {
                       key={message._id} 
                       message={message} 
                       currentUserId={currentUserId}
+                      currentUsername={currentUsername}
                     />
                   ))}
                 </>
+              ) : (
+                <div className="no-results">
+                  <div className="empty-state">
+                    <span className="material-icons-round message-icon">search_off</span>
+                    <p>
+                      {searchQuery && priorityFilter !== "todos"
+                        ? `No hay mensajes con prioridad "${priorityFilter}" que contengan "${searchQuery}"`
+                        : searchQuery
+                        ? `No hay mensajes que contengan "${searchQuery}"`
+                        : `No hay mensajes con prioridad "${priorityFilter}"`}
+                    </p>
+                  </div>
+                </div>
               )}
               <div ref={messagesEndRef} />
             </div>

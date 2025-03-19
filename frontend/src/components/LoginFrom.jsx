@@ -28,7 +28,8 @@ const LoginForm = () => {
 
       if (response.status === 200) {
         localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('userId', data.user._id);
+        localStorage.setItem('username', data.user.username);
         
         await Swal.fire({
           icon: 'success',
