@@ -43,10 +43,10 @@ const messageController = {
         .populate('sender', 'username')
         .populate('readBy', 'username');
 
-      // Emitir el nuevo mensaje
+      // Emitir el nuevo mensaje SOLO a la sala de la materia
       const io = req.app.get('io');
       if (io) {
-        io.emit('new_message', populatedMessage);
+        io.to(`subject_${subject}`).emit('new_message', populatedMessage);
       }
 
       res.status(201).json(populatedMessage);

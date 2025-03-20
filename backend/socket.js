@@ -45,9 +45,16 @@ function initializeSocket(httpServer) {
   io.on('connection', (socket) => {
     console.log('Nuevo cliente conectado:', socket.id);
 
-    socket.on('join_room', (room) => {
-      socket.join(room);
-      console.log(`Usuario ${socket.id} se unió a la sala ${room}`);
+    socket.on('join_subject', (subjectId) => {
+      // Primero salir de todas las salas anteriores
+      socket.rooms.forEach(room => {
+        if (room !== socket.id) {
+          socket.leave(room);
+        }
+      });
+      // Unirse a la nueva sala
+      socket.join(`subject_${subjectId}`);
+      console.log(`Usuario ${socket.id} se unió a la materia ${subjectId}`);
     });
 
     socket.on('send_message', (data) => {

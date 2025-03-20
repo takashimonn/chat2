@@ -326,47 +326,42 @@ const Chat = () => {
   }, [messages, isLoading]);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/");
-      return;
-    }
-
-    // Configuración del socket
-    socketRef.current = io("http://localhost:4000", {
+    const socket = io("http://localhost:4000", {
       auth: {
         token: localStorage.getItem("token"),
       },
     });
+    socketRef.current = socket;
 
-    // Escuchar actualizaciones de estado de mensajes
-    socketRef.current.on("message_status_updated", (updatedMessage) => {
-      console.log("Estado del mensaje actualizado:", updatedMessage);
-      setMessages((prevMessages) =>
-        prevMessages.map((msg) =>
-          msg._id === updatedMessage.messageId 
-            ? { ...msg, status: updatedMessage.newStatus }
-            : msg
+    // Unirse a la sala cuando se selecciona una materia
+    if (selectedSubject) {
+      socket.emit('join_subject', selectedSubject.id);
+    }
+
+    // Escuchar nuevos mensajes
+    socket.on('new_message', (newMessage) => {
+      if (newMessage.subject === selectedSubject?.id) {
+        setMessages(prevMessages => [...prevMessages, newMessage]);
+      }
+    });
+
+    socket.on('message_status_updated', ({ messageId, newStatus }) => {
+      setMessages(prevMessages =>
+        prevMessages.map(msg =>
+          msg._id === messageId ? { ...msg, status: newStatus } : msg
         )
       );
     });
 
-    // Escuchar nuevos mensajes
-    socketRef.current.on("new_message", (newMessage) => {
-      setMessages((prev) => {
-        const messageExists = prev.some(msg => msg._id === newMessage._id);
-        if (messageExists) return prev;
-        return [...prev, newMessage];
-      });
-
-      socketRef.current.emit("mark_message_as_read", { messageId: newMessage._id });
-      scrollToBottom(true);
-    });
-
     return () => {
-      socketRef.current?.disconnect();
+      if (selectedSubject) {
+        socket.emit('leave_subject', selectedSubject.id);
+      }
+      socket.off('new_message');
+      socket.off('message_status_updated');
+      socket.disconnect();
     };
-  }, [navigate]);
+  }, [selectedSubject]);
 
   // Cargar mensajes cuando se selecciona una materia
   useEffect(() => {
@@ -554,25 +549,6 @@ const Chat = () => {
       markMessagesAsRead();
     }
   }, [selectedSubject, messages.length]);
-
-  // Y ESTE OTRO para escuchar nuevos mensajes y actualizarlos automáticamente
-  useEffect(() => {
-    const socket = io('http://localhost:4000');
-    socketRef.current = socket;
-
-    socket.on('message_status_updated', ({ messageId, newStatus }) => {
-      setMessages(prevMessages =>
-        prevMessages.map(msg =>
-          msg._id === messageId ? { ...msg, status: newStatus } : msg
-        )
-      );
-    });
-
-    return () => {
-      socket.off('message_status_updated');
-      socket.disconnect();
-    };
-  }, []);
 
   return (
     <div className="chat-container">
