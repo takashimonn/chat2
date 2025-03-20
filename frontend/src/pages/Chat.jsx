@@ -333,22 +333,22 @@ const Chat = () => {
     });
     socketRef.current = socket;
 
-    // Unirse a la sala cuando se selecciona una materia
     if (selectedSubject) {
       socket.emit('join_subject', selectedSubject.id);
     }
 
-    // Escuchar nuevos mensajes
     socket.on('new_message', (newMessage) => {
       if (newMessage.subject === selectedSubject?.id) {
         setMessages(prevMessages => [...prevMessages, newMessage]);
       }
     });
 
-    socket.on('message_status_updated', ({ messageId, newStatus }) => {
+    socket.on('message_status_updated', ({ messageId, newStatus, readBy }) => {
       setMessages(prevMessages =>
         prevMessages.map(msg =>
-          msg._id === messageId ? { ...msg, status: newStatus } : msg
+          msg._id === messageId 
+            ? { ...msg, status: newStatus, readBy: readBy }
+            : msg
         )
       );
     });
