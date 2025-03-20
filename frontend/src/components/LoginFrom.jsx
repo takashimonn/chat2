@@ -3,12 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import '../styles/LoginForm.css';
 import axiosInstance from '../utils/axiosConfig';
+import ReCAPTCHA from "react-google-recaptcha";
 
 const LoginForm = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
+  const [captchaValue, setCaptchaValue] = useState(null);
 
   const navigate = useNavigate();
 
@@ -22,8 +24,20 @@ const LoginForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!captchaValue) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Por favor verifica que no eres un robot'
+      });
+      return;
+    }
+    
     try {
-      const response = await axiosInstance.post('/users/login', formData);
+      const response = await axiosInstance.post('/users/login', {
+        ...formData,
+        captchaToken: captchaValue
+      });
       const data = response.data;
 
       if (response.status === 200) {
@@ -95,6 +109,13 @@ const LoginForm = () => {
                   placeholder="••••••••"
                 />
               </div>
+            </div>
+
+            <div className="captcha-container">
+              <ReCAPTCHA
+                sitekey="6LfA3PkqAAAAAMhuoZ93r6cncPxZv09gE5kMfavu"
+                onChange={(value) => setCaptchaValue(value)}
+              />
             </div>
 
             <button type="submit" className="submit-button">

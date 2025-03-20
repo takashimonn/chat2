@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const fetch = require('node-fetch');
 
 // Controlador para el registro de usuarios
 exports.register = async (req, res) => {
@@ -54,9 +55,26 @@ exports.register = async (req, res) => {
 // Controlador para el login de usuarios
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, captchaToken } = req.body;
 
-    // Verificar si el usuario existe
+    // Validar el captcha primero
+    const captchaResponse = await fetch('https://www.google.com/recaptcha/api/siteverify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: `secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${captchaToken}`
+    });
+
+    const captchaData = await captchaResponse.json();
+
+    if (!captchaData.success) {
+      return res.status(400).json({ 
+        message: 'Por favor verifica que no eres un robot' 
+      });
+    }
+
+    // Continuar con la lógica de login existente
     let user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ mensaje: 'Credenciales inválidas' });
@@ -88,8 +106,8 @@ exports.login = async (req, res) => {
     );
 
   } catch (error) {
-    console.error(error.message);
-    res.status(500).json({ mensaje: 'Error en el servidor' });
+    console.error('Error en login:', error);
+    res.status(500).json({ message: 'Error en el servidor' });
   }
 };
 
