@@ -30,42 +30,18 @@ const messageController = {
       const { content, subject, priority, replyTo } = req.body;
       const sender = req.user._id;
 
-      const newMessage = new Message({
+      const newMessage = await Message.create({
         content,
         subject,
         sender,
         priority,
         status: 'no_leido',
-        readBy: [],
-        replyTo
+        readBy: []
       });
-
-      await newMessage.save();
 
       const populatedMessage = await Message.findById(newMessage._id)
         .populate('sender', 'username')
-        .populate('readBy', 'username')
-        .populate({
-          path: 'replyTo',
-          populate: {
-            path: 'sender',
-            select: 'username'
-          }
-        });
-
-      // Si es una respuesta, actualizar el estado del mensaje original
-      if (replyTo) {
-        await Message.findByIdAndUpdate(replyTo, { status: 'respondido' });
-        
-        // Emitir actualización del estado del mensaje original
-        const io = req.app.get('io');
-        if (io) {
-          io.emit('message_status_updated', {
-            messageId: replyTo,
-            newStatus: 'respondido'
-          });
-        }
-      }
+        .populate('readBy', 'username');
 
       // Emitir el nuevo mensaje
       const io = req.app.get('io');
@@ -87,47 +63,31 @@ const messageController = {
       const { status } = req.body;
       const userId = req.user._id;
 
-      const message = await Message.findById(messageId)
-        .populate("sender", "username")
-        .populate("readBy", "username");
+      const updatedMessage = await Message.findByIdAndUpdate(
+        messageId,
+        { 
+          status,
+          $addToSet: { readBy: userId }
+        },
+        { new: true }
+      )
+      .populate('sender', 'username')
+      .populate('readBy', 'username');
 
-      if (!message) {
-        return res.status(404).json({ message: "Mensaje no encontrado" });
-      }
-
-      // Verificar si el usuario es el remitente
-      const isSender = message.sender._id.toString() === userId.toString();
-
-      message.status = status;
-      
-      // Solo agregar al array readBy si no es el remitente y no está ya en el array
-      if (status === "visto" && !isSender && !message.readBy.some(user => user._id.toString() === userId.toString())) {
-        message.readBy.push(userId);
-      }
-
-      await message.save();
-
-      const updatedMessage = await Message.findById(messageId)
-        .populate("sender", "username")
-        .populate("readBy", "username");
-
-      // Emitir actualización
-      const io = req.app.get("io");
+      // Emitir la actualización INMEDIATAMENTE
+      const io = req.app.get('io');
       if (io) {
-        io.emit("message_status_updated", {
-          messageId: message._id,
+        io.emit('message_status_updated', {
+          messageId: updatedMessage._id,
           newStatus: status,
-          readBy: updatedMessage.readBy.filter(user => user._id.toString() !== message.sender._id.toString())
+          readBy: updatedMessage.readBy
         });
       }
 
-      res.json({
-        ...updatedMessage.toObject(),
-        readBy: updatedMessage.readBy.filter(user => user._id.toString() !== message.sender._id.toString())
-      });
+      res.json(updatedMessage);
     } catch (error) {
-      console.error("Error al actualizar estado:", error);
-      res.status(500).json({ message: "Error al actualizar estado" });
+      console.error('Error al actualizar estado:', error);
+      res.status(500).json({ message: 'Error al actualizar estado' });
     }
   },
 

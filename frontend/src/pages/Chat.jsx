@@ -341,6 +341,7 @@ const Chat = () => {
 
     // Escuchar actualizaciones de estado de mensajes
     socketRef.current.on("message_status_updated", (updatedMessage) => {
+      console.log("Estado del mensaje actualizado:", updatedMessage);
       setMessages((prevMessages) =>
         prevMessages.map((msg) =>
           msg._id === updatedMessage.messageId 
@@ -357,6 +358,8 @@ const Chat = () => {
         if (messageExists) return prev;
         return [...prev, newMessage];
       });
+
+      socketRef.current.emit("mark_message_as_read", { messageId: newMessage._id });
       scrollToBottom(true);
     });
 
@@ -378,75 +381,70 @@ const Chat = () => {
 
   const loadMessages = async () => {
     if (!selectedSubject) return;
-
     setIsLoading(true);
     
     try {
-      // Primero cargar los mensajes
       const messagesResponse = await axiosInstance.get(`/messages/subject/${selectedSubject.id}`);
       
-      // Filtrar duplicados
+      // Filtrar duplicados (esto evita el problema de mensajes duplicados)
       const uniqueMessages = Array.from(
         new Map(messagesResponse.data.map(msg => [msg._id, msg])).values()
       );
       
-      // Marcar como leídos solo los mensajes que no son del usuario actual
+      // Marcar como leídos inmediatamente
       const messagesToMarkAsRead = uniqueMessages.filter(
-        msg => msg.sender.username !== currentUsername
+        msg => msg.sender.username !== currentUsername && msg.status === 'no_leido'
       );
       
       if (messagesToMarkAsRead.length > 0) {
+        // Actualizar en el backend
         await axiosInstance.post(`/messages/subject/${selectedSubject.id}/read`);
+        
+        // Actualizar en el frontend inmediatamente
+        setMessages(uniqueMessages.map(msg => 
+          messagesToMarkAsRead.some(m => m._id === msg._id)
+            ? { ...msg, status: 'visto' }
+            : msg
+        ));
+      } else {
+        setMessages(uniqueMessages);
       }
-      
-      setMessages(uniqueMessages);
     } catch (error) {
       console.error('Error al cargar mensajes:', error);
-      if (error.response?.status === 401) {
-        localStorage.clear();
-        navigate('/');
-      }
     } finally {
       setIsLoading(false);
-      requestAnimationFrame(() => scrollToBottom(false));
     }
   };
 
-  const handleSendMessage = async (messageContent, priority, replyTo = null) => {
-    if (!selectedSubject) return;
-
+  const handleSendMessage = async (content, priority = 'normal') => {
     try {
-      const response = await axiosInstance.post('/messages', {
-        content: messageContent,
-        subject: selectedSubject.id,
-        priority: priority,
-        replyTo: replyTo?._id
+      const response = await fetch('http://localhost:4000/api/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          content,
+          subject: selectedSubject.id,
+          priority,
+          replyTo: replyingTo?._id
+        })
       });
 
-      // Si es una respuesta, actualizar el estado del mensaje original
-      if (replyTo) {
-        await axiosInstance.patch(`/messages/${replyTo._id}/status`, {
-          status: 'respondido'
-        });
+      if (!response.ok) {
+        throw new Error('Error al enviar mensaje');
       }
 
-      setMessages(prev => {
-        const messageExists = prev.some(msg => msg._id === response.data._id);
-        if (messageExists) return prev;
-        return [...prev, response.data];
-      });
+      // No necesitas actualizar los mensajes aquí porque Socket.IO lo hará
+      setReplyingTo(null);
       
-      scrollToBottom(true);
     } catch (error) {
-      console.error('Error completo:', error);
-      if (error.response?.status === 401) {
-        localStorage.clear();
-        navigate('/');
-      }
+      console.error('Error:', error);
       Swal.fire({
         icon: 'error',
-        title: 'Error al enviar mensaje',
-        text: error.response?.data?.message || 'Error al enviar mensaje'
+        title: 'Error',
+        text: 'No se pudo enviar el mensaje'
       });
     }
   };
@@ -532,6 +530,49 @@ const Chat = () => {
       )
     );
   };
+
+  // Agregar este useEffect después de tus otros useEffects
+  useEffect(() => {
+    if (selectedSubject && messages.length > 0) {
+      // Marcar todos los mensajes como vistos cuando entras a la conversación
+      const markMessagesAsRead = async () => {
+        try {
+          await axiosInstance.post(`/messages/subject/${selectedSubject.id}/read`);
+          
+          // Actualizar el estado local inmediatamente
+          setMessages(prevMessages => 
+            prevMessages.map(msg => ({
+              ...msg,
+              status: msg.sender.username !== currentUsername ? 'visto' : msg.status
+            }))
+          );
+        } catch (error) {
+          console.error('Error al marcar mensajes como leídos:', error);
+        }
+      };
+
+      markMessagesAsRead();
+    }
+  }, [selectedSubject, messages.length]);
+
+  // Y ESTE OTRO para escuchar nuevos mensajes y actualizarlos automáticamente
+  useEffect(() => {
+    const socket = io('http://localhost:4000');
+    socketRef.current = socket;
+
+    socket.on('message_status_updated', ({ messageId, newStatus }) => {
+      setMessages(prevMessages =>
+        prevMessages.map(msg =>
+          msg._id === messageId ? { ...msg, status: newStatus } : msg
+        )
+      );
+    });
+
+    return () => {
+      socket.off('message_status_updated');
+      socket.disconnect();
+    };
+  }, []);
 
   return (
     <div className="chat-container">
