@@ -14,6 +14,13 @@ const LoginForm = () => {
 
   const navigate = useNavigate();
 
+  // Verificar si existe la clave de reCAPTCHA
+  const recaptchaSiteKey = process.env.REACT_APP_RECAPTCHA_SITE_KEY;
+
+  if (!recaptchaSiteKey) {
+    console.error('Error: REACT_APP_RECAPTCHA_SITE_KEY no está definida');
+  }
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prevState => ({
@@ -85,22 +92,17 @@ const LoginForm = () => {
 
   return (
     <div className="login-container">
-      <div className="login-header">
-        <h1>Sistema de Control Escolar</h1>
-        <p>Portal de Comunicación</p>
-      </div>
-
       <div className="login-card">
-        <div className="card-header">
-          <h2>Inicio de Sesión</h2>
-        </div>
+        <div className="login-form-section">
+          <div className="login-header">
+            <h1>Login to system</h1>
+            <p>Please enter your credentials</p>
+          </div>
 
-        <div className="card-body">
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label htmlFor="email">Correo Institucional</label>
+              <label htmlFor="email">Email</label>
               <div className="input-group">
-                <span className="input-icon email-icon"></span>
                 <input
                   id="email"
                   name="email"
@@ -108,15 +110,14 @@ const LoginForm = () => {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="usuario@institucion.edu.mx"
+                  placeholder="Enter your email"
                 />
               </div>
             </div>
 
             <div className="form-group">
-              <label htmlFor="password">Contraseña</label>
+              <label htmlFor="password">Password</label>
               <div className="input-group">
-                <span className="input-icon password-icon"></span>
                 <input
                   id="password"
                   name="password"
@@ -124,37 +125,34 @@ const LoginForm = () => {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  placeholder="••••••••"
+                  placeholder="Enter your password"
                 />
               </div>
             </div>
 
-            <div className="captcha-container">
-              <ReCAPTCHA
-                sitekey="6LfA3PkqAAAAAMhuoZ93r6cncPxZv09gE5kMfavu"
-                onChange={(value) => setCaptchaValue(value)}
-              />
+            <div className="recaptcha-container">
+              {recaptchaSiteKey ? (
+                <ReCAPTCHA
+                  sitekey={recaptchaSiteKey}
+                  onChange={(value) => setCaptchaValue(value)}
+                />
+              ) : (
+                <div className="recaptcha-error">
+                  Error: reCAPTCHA no está configurado correctamente
+                </div>
+              )}
             </div>
 
-            <button type="submit" className="submit-button">
-              Ingresar al Sistema
+            <button type="submit" className="login-button">
+              Log in
             </button>
-
-            <div className="form-links">
-              <Link to="/register" className="register-link">
-                Crear nueva cuenta
-              </Link>
-              <a href="#" className="forgot-password">
-                ¿Olvidaste tu contraseña?
-              </a>
-            </div>
           </form>
         </div>
-      </div>
 
-      <footer className="login-footer">
-        <p>© 2024 Sistema de Control Escolar. Todos los derechos reservados.</p>
-      </footer>
+        <div className="login-visual-section">
+          <div className="wave-animation"></div>
+        </div>
+      </div>
     </div>
   );
 };
