@@ -34,7 +34,25 @@ const LoginForm = () => {
     }
     
     try {
-      const response = await axiosInstance.post('/users/login', {
+      // Verificar primero si hay una sesión activa
+      const sessionCheck = await axiosInstance.post('/auth/check-session', {
+        email: formData.email
+      });
+
+      console.log('Respuesta de check-session:', sessionCheck.data);
+
+      if (sessionCheck.data.hasActiveSession) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Sesión activa',
+          text: 'Ya tienes una sesión activa en otro navegador',
+          confirmButtonText: 'Entendido'
+        });
+        return;
+      }
+
+      // Continuar con el login normal
+      const response = await axiosInstance.post('/auth/login', {
         ...formData,
         captchaToken: captchaValue
       });

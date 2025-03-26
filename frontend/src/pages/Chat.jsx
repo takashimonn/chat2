@@ -5,6 +5,7 @@ import io from "socket.io-client";
 import "../styles/Chat.css";
 import axiosInstance from '../utils/axiosConfig';
 import React from "react";
+import { logout } from '../utils/auth';
 
 // Componente de mensaje individual memo-izado
 const MessageItem = memo(({ message: initialMessage, currentUserId, currentUsername, socketRef, onReply }) => {
@@ -456,28 +457,13 @@ const Chat = () => {
     setSelectedSubject(subject);
   };
 
-  const handleLogout = () => {
-    Swal.fire({
-      title: '¿Cerrar sesión?',
-      text: '¿Estás seguro que deseas cerrar sesión?',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#ff4d4d',
-      cancelButtonColor: '#075e54',
-      confirmButtonText: 'Sí, cerrar sesión',
-      cancelButtonText: 'Cancelar',
-      background: '#fff',
-      iconColor: '#ff4d4d',
-      customClass: {
-        confirmButton: 'swal-confirm-button',
-        cancelButton: 'swal-cancel-button'
-      }
-    }).then((result) => {
-      if (result.isConfirmed) {
-        localStorage.clear();
-        navigate("/");
-      }
-    });
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
   };
 
   const getFilterIcon = (filter) => {

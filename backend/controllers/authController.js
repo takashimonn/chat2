@@ -2,6 +2,7 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const fetch = require('node-fetch');
+const Session = require('../models/Session');
 
 // Controlador para el registro de usuarios
 exports.register = async (req, res) => {
@@ -74,37 +75,53 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Continuar con la lógica de login existente
     let user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ mensaje: 'Credenciales inválidas' });
     }
 
-    // Verificar contraseña
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ mensaje: 'Credenciales inválidas' });
     }
 
-    // Crear y devolver el token JWT
-    const payload = {
-      user: {
-        id: user.id
-      }
-    };
+    // Verificar si ya existe una sesión activa
+    const existingSession = await Session.findOne({ 
+      userId: user._id,
+      isActive: true 
+    });
 
-    jwt.sign(
-      payload,
+    if (existingSession) {
+      return res.status(400).json({ 
+        message: 'Ya existe una sesión activa en otro navegador',
+        hasActiveSession: true
+      });
+    }
+
+    // Crear token JWT
+    const token = jwt.sign(
+      { id: user._id, email: user.email },
       process.env.JWT_SECRET,
-      {
-        expiresIn: '2h'
-      },
-      (err, token) => {
-        if (err) throw err;
-        res.json({ token });
-      }
+      { expiresIn: '2h' }
     );
 
+    // Crear nueva sesión
+    await Session.create({
+      userId: user._id,
+      token,
+      isActive: true,
+      lastActive: new Date()
+    });
+
+    res.json({
+      message: 'Login exitoso',
+      user: {
+        id: user._id,
+        email: user.email,
+        username: user.username
+      },
+      token
+    });
   } catch (error) {
     console.error('Error en login:', error);
     res.status(500).json({ message: 'Error en el servidor' });

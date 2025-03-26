@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Session = require('../models/Session');
 
 const auth = async (req, res, next) => {
   try {
@@ -16,6 +17,21 @@ const auth = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       console.log('Token decodificado:', decoded);
       
+      // Verificar si existe una sesión activa con este token
+      const session = await Session.findOne({
+        token,
+        isActive: true
+      });
+
+      if (!session) {
+        // Si no hay sesión activa, desactivar cualquier otra sesión del usuario
+        await Session.updateMany(
+          { userId: decoded.id },
+          { isActive: false }
+        );
+        throw new Error('Sesión inválida');
+      }
+
       // Obtener el usuario completo de la base de datos
       const user = await User.findById(decoded.id);
       if (!user) {
@@ -23,6 +39,7 @@ const auth = async (req, res, next) => {
       }
       
       req.user = user;
+      req.session = session;
       console.log('Usuario autenticado:', user);
       next();
     } catch (error) {

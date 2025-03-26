@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginForm from './components/LoginFrom';
 import Register from './pages/Register';
 import Chat from './pages/Chat';
+import { useEffect } from 'react';
+import { logout } from './utils/auth';
 
 // Componente para proteger rutas
 const ProtectedRoute = ({ children }) => {
@@ -14,6 +16,21 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   console.log("App renderizada");
+
+  useEffect(() => {
+    const handleBeforeUnload = async () => {
+      if (localStorage.getItem('token')) {
+        await logout();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>

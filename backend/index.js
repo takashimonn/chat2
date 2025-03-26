@@ -12,6 +12,7 @@ const initializeSocket = require('./socket');
 
 const userRoutes = require('./routes/userRoutes');
 const messageRoutes = require('./routes/messageRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -52,6 +53,7 @@ app.get('/socket-test', (req, res) => {
 });
 
 // Rutas API
+app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/messages', messageRoutes);
 
@@ -71,6 +73,7 @@ mongoose.connect('mongodb+srv://diana3041220286:4tAumjAYPOEPdOZH@cluster0.fodfu9
 
 // Verificar la conexión
 const db = mongoose.connection;
+
 db.on('error', console.error.bind(console, 'Error de conexión:'));
 db.once('open', function() {
   console.log("MongoDB conectado exitosamente");
