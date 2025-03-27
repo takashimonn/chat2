@@ -1,26 +1,38 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import '../styles/Dashboard.css';
+import { logout } from '../utils/auth';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/', { replace: true });
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
+  };
+
   const cards = [
     {
       title: "Chat Académico",
       description: "Comunícate con profesores y compañeros en tiempo real para resolver dudas y compartir información.",
-      icon: "fas fa-comments",
+      image: "/images/chat.png",
       path: "/chat",
       color: "#e3f2fd"
     },
     {
       title: "Calificaciones",
       description: "Consulta tus calificaciones, histórico académico y progreso en cada materia.",
-      icon: "fas fa-graduation-cap",
+      image: "/images/calificaciones.png",
       path: "/calificaciones",
       color: "#f3e5f5"
     },
     {
       title: "Próximamente",
       description: "Nuevas funcionalidades en desarrollo para mejorar tu experiencia académica.",
-      icon: "fas fa-clock",
+      image: "/images/prox.png",
       path: "#",
       color: "#fff3e0"
     }
@@ -30,8 +42,14 @@ const Dashboard = () => {
     <div className="dashboard">
       <div className="dashboard-header">
         <h1>Sistema de Control Escolar</h1>
+
         <p>Selecciona una opción para comenzar</p>
       </div>
+
+      <button onClick={handleLogout} className="logout-button">
+        <span className="material-icons-round">logout</span>
+        <span className="logout-button-text">Cerrar Sesión</span>
+      </button>
 
       <div className="cards-container">
         {cards.map((card, index) => (
@@ -41,7 +59,11 @@ const Dashboard = () => {
             key={index}
             style={{ backgroundColor: card.color }}
           >
-            <i className={`${card.icon} card-icon`} style={{ color: '#1a1a1a', fontSize: '3rem' }} />
+            <img 
+              src={card.image} 
+              alt={card.title}
+              className="card-image"
+            />
             <h2 className="card-title">{card.title}</h2>
             <p className="card-description">{card.description}</p>
             <span className="card-button">
