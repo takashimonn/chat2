@@ -177,4 +177,89 @@
 
 .create-subject-button:hover {
   background-color: #1976D2;
+}
+
+/* Estilos para la tabla de tareas */
+.tasks-table-container {
+  margin-top: 20px;
+  background: #1e1e1e;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.tasks-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: #fff;
+}
+
+.tasks-table th {
+  background: #2d2d2d;
+  padding: 12px;
+  text-align: left;
+  font-weight: 500;
+}
+
+.tasks-table td {
+  padding: 12px;
+  border-bottom: 1px solid #333;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-pending {
+  background-color: #ffd700;
+}
+
+.status-completed {
+  background-color: #4CAF50;
+}
+
+.status-late {
+  background-color: #f44336;
+}
+
+.table-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-button {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.action-button:hover {
+  background: #333;
+}
+
+.table-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: #2d2d2d;
+  color: #fff;
+}
+
+.entries-select {
+  background: #1e1e1e;
+  color: #fff;
+  border: 1px solid #333;
+  padding: 4px;
+  border-radius: 4px;
 } 

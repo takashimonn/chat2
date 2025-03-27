@@ -18,6 +18,9 @@ const Tasks = () => {
     name: '',
     description: ''
   });
+  const [tasks, setTasks] = useState([]);
+  const [entriesPerPage, setEntriesPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Mover fetchSubjects fuera del useEffect
   const fetchSubjects = async () => {
@@ -34,14 +37,30 @@ const Tasks = () => {
     }
   };
 
+  const fetchTasks = async () => {
+    try {
+      const response = await fetch('http://localhost:4000/api/tasks', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const data = await response.json();
+      setTasks(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error al cargar tareas:', error);
+      setTasks([]);
+    }
+  };
+
   useEffect(() => {
     // Obtener el rol directamente del localStorage
     const userRole = localStorage.getItem('userRole');
     console.log('Role del usuario:', userRole);
     setUserRole(userRole || '');
 
-    // Llamar a fetchSubjects
+    // Llamar a fetchSubjects y fetchTasks
     fetchSubjects();
+    fetchTasks();
   }, []);
 
   const handleInputChange = (e) => {
@@ -180,6 +199,83 @@ const Tasks = () => {
     }
   };
 
+  // Función para determinar el estado de la tarea
+  const getTaskStatus = (task) => {
+    const now = new Date();
+    const dueDate = new Date(task.dueDate);
+    
+    if (task.completed) return { text: 'Completada', class: 'completed' };
+    if (dueDate < now) return { text: 'Atrasada', class: 'late' };
+    return { text: 'Pendiente', class: 'pending' };
+  };
+
+  const handleViewTask = (task) => {
+    Swal.fire({
+      title: task.title,
+      html: `
+        <div>
+          <p><strong>Descripción:</strong> ${task.description}</p>
+          <p><strong>Materia:</strong> ${task.subject.name}</p>
+          <p><strong>Fecha de entrega:</strong> ${new Date(task.dueDate).toLocaleString()}</p>
+          <p><strong>Archivo:</strong> <a href="${task.fileUrl}" target="_blank">Ver archivo</a></p>
+        </div>
+      `,
+      width: '600px'
+    });
+  };
+
+  const handleEditTask = (task) => {
+    setTaskForm({
+      title: task.title,
+      description: task.description,
+      dueDate: task.dueDate.slice(0, 16), // Formato para datetime-local
+      subject: task.subject._id,
+      file: null
+    });
+    setShowModal(true);
+  };
+
+  const handleDeleteTask = async (taskId) => {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: "Esta acción no se puede deshacer",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const response = await fetch(`http://localhost:4000/api/tasks/${taskId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+
+        if (!response.ok) throw new Error('Error al eliminar la tarea');
+
+        await Swal.fire(
+          '¡Eliminada!',
+          'La tarea ha sido eliminada.',
+          'success'
+        );
+
+        fetchTasks(); // Actualizar la lista de tareas
+      } catch (error) {
+        console.error('Error:', error);
+        Swal.fire(
+          'Error',
+          'No se pudo eliminar la tarea',
+          'error'
+        );
+      }
+    }
+  };
+
   return (
     <div className="tasks-container">
       <div className="tasks-header">
@@ -202,8 +298,99 @@ const Tasks = () => {
         )}
       </div>
 
-      {/* Lista de tareas aquí */}
-      
+      <div className="tasks-table-container">
+        <table className="tasks-table">
+          <thead>
+            <tr>
+              <th>Estado</th>
+              <th>Título</th>
+              <th>Materia</th>
+              <th>Fecha de entrega</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Array.isArray(tasks) && tasks
+              .slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage)
+              .map(task => {
+                const status = getTaskStatus(task);
+                return (
+                  <tr key={task._id}>
+                    <td>
+                      <div className="status-indicator">
+                        <span className={`status-dot status-${status.class}`}></span>
+                        {status.text}
+                      </div>
+                    </td>
+                    <td>{task.title}</td>
+                    <td>{task.subject.name}</td>
+                    <td>{new Date(task.dueDate).toLocaleString()}</td>
+                    <td>
+                      <div className="table-actions">
+                        <button 
+                          className="action-button"
+                          onClick={() => handleViewTask(task)}
+                          title="Ver detalles"
+                        >
+                          <i className="fas fa-eye"></i>
+                        </button>
+                        {userRole === 'maestro' && (
+                          <>
+                            <button 
+                              className="action-button"
+                              onClick={() => handleEditTask(task)}
+                              title="Editar"
+                            >
+                              <i className="fas fa-edit"></i>
+                            </button>
+                            <button 
+                              className="action-button"
+                              onClick={() => handleDeleteTask(task._id)}
+                              title="Eliminar"
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+          </tbody>
+        </table>
+        <div className="table-pagination">
+          <div>
+            Show 
+            <select 
+              className="entries-select"
+              value={entriesPerPage}
+              onChange={(e) => setEntriesPerPage(Number(e.target.value))}
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+            entries
+          </div>
+          <div>
+            <button 
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </button>
+            <span>{currentPage}</span>
+            <button 
+              onClick={() => setCurrentPage(prev => prev + 1)}
+              disabled={currentPage * entriesPerPage >= tasks.length}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Modal para crear tarea */}
       {showModal && (
         <div className="modal-overlay">

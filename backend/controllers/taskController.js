@@ -51,6 +51,7 @@ const taskController = {
         .populate('subject', 'name')
         .sort({ createdAt: -1 });
 
+      console.log('Tareas encontradas:', tasks);
       res.json(tasks);
     } catch (error) {
       console.error('Error al obtener tareas:', error);
