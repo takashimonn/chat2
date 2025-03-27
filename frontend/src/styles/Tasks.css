@@ -1,16 +1,96 @@
 .tasks-container {
-  padding: 2rem;
-  max-width: 800px;
-  margin: 0 auto;
+  padding: 20px;
 }
 
 .tasks-header {
-  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
 }
 
 .tasks-header h1 {
   color: #333;
   font-size: 2rem;
+}
+
+.create-task-button {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.create-task-button:hover {
+  background-color: #45a049;
+}
+
+/* Estilos para el modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.close-modal {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.modal-footer button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.modal-footer button[type="submit"] {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+}
+
+.modal-footer button[type="button"] {
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
 }
 
 .task-form-container {
@@ -76,4 +156,25 @@
 
 .submit-button i {
   font-size: 1.2rem;
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+}
+
+.create-subject-button {
+  background-color: #2196F3;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.create-subject-button:hover {
+  background-color: #1976D2;
 } 

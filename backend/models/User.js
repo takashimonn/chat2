@@ -2,20 +2,30 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
-  username: {
-    type: String,
-    required: true,
-    unique: true
-  },
   email: {
     type: String,
     required: true,
     unique: true
   },
+  username: {
+    type: String,
+    required: true
+  },
   password: {
     type: String,
     required: true
   },
+  role: {
+    type: String,
+    enum: ['alumno', 'maestro'],
+    required: true,
+    default: 'alumno'
+  },
+  // Campos adicionales que podrían ser útiles
+  subjects: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Subject'
+  }],
   createdAt: {
     type: Date,
     default: Date.now
@@ -24,11 +34,7 @@ const userSchema = new mongoose.Schema({
 
 // Método para comparar contraseñas
 userSchema.methods.comparePassword = async function(candidatePassword) {
-  try {
-    return await bcrypt.compare(candidatePassword, this.password);
-  } catch (error) {
-    throw new Error(error);
-  }
+  return await bcrypt.compare(candidatePassword, this.password);
 };
 
 // Middleware para hashear la contraseña antes de guardar

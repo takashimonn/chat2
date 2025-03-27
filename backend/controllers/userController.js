@@ -6,9 +6,8 @@ const jwt = require('jsonwebtoken');
 const userController = {
   // Registrar un nuevo usuario
   register: async (req, res) => {
-
     try {
-      const { email, password, username } = req.body;
+      const { email, password, username, role } = req.body;
 
       const userExists = await User.findOne({ email });
 
@@ -18,28 +17,44 @@ const userController = {
         });
       }
 
+      // Validar rol
+      if (role && !['alumno', 'maestro'].includes(role)) {
+        return res.status(400).json({
+          message: 'Rol no válido'
+        });
+      }
+
       // Crear nuevo usuario
       const user = new User({
         email,
         password,
-        username
+        username,
+        role: role || 'alumno' // Por defecto será alumno si no se especifica
       });
+
+      // Encriptar contraseña
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password, salt);
 
       await user.save();
 
       const token = jwt.sign(
-        { id: user._id, email: user.email },
+        { 
+          id: user._id, 
+          email: user.email,
+          role: user.role // Incluir el rol en el token
+        },
         process.env.JWT_SECRET,
         { expiresIn: '24h' }
       );
 
-      // Enviar respuesta
       res.status(201).json({
         message: 'Usuario registrado exitosamente',
         user: {
           id: user._id,
           email: user.email,
-          username: user.username
+          username: user.username,
+          role: user.role
         },
         token
       });

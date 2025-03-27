@@ -4,13 +4,14 @@ const Session = require('../models/Session');
 
 const auth = async (req, res, next) => {
   try {
-    // Log para debugging
+    console.log('JWT_SECRET exists:', !!process.env.JWT_SECRET);
     console.log('Headers:', req.headers);
     
     const token = req.header('Authorization')?.replace('Bearer ', '');
     
     if (!token) {
       console.log('No token provided');
+      
       return res.status(401).json({ message: 'No autorizado - Token no proporcionado' });
     }
     try {
@@ -43,8 +44,8 @@ const auth = async (req, res, next) => {
       console.log('Usuario autenticado:', user);
       next();
     } catch (error) {
-      console.log('Token inválido:', error.message);
-      return res.status(401).json({ message: 'No autorizado - Token inválido' });
+      console.log('Error al verificar token:', error.message);
+      return res.status(401).json({ message: 'Token inválido' });
     }
   } catch (error) {
     console.error('Error en autenticación:', error);

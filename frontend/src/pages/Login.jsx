@@ -21,12 +21,14 @@ const Login = () => {
 
       const data = await response.json();
       console.log('Respuesta del servidor:', data); // Para debugging
+      console.log('Datos del usuario:', data.user); // Para debugging
 
       if (response.ok) {
         // Guardar token y datos del usuario
         localStorage.setItem('token', data.token);
         localStorage.setItem('userId', data.user._id);
         localStorage.setItem('username', data.user.username);
+        localStorage.setItem('userRole', data.user.role);
 
         Swal.fire({
           icon: 'success',

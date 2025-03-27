@@ -80,7 +80,7 @@ exports.login = async (req, res) => {
       return res.status(400).json({ mensaje: 'Credenciales inválidas' });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(400).json({ mensaje: 'Credenciales inválidas' });
     }
@@ -98,9 +98,13 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Crear token JWT
+    // Crear token JWT incluyendo el rol
     const token = jwt.sign(
-      { id: user._id, email: user.email },
+      { 
+        id: user._id, 
+        email: user.email,
+        role: user.role 
+      },
       process.env.JWT_SECRET,
       { expiresIn: '2h' }
     );
@@ -116,9 +120,10 @@ exports.login = async (req, res) => {
     res.json({
       message: 'Login exitoso',
       user: {
-        id: user._id,
+        _id: user._id,
         email: user.email,
-        username: user.username
+        username: user.username,
+        role: user.role
       },
       token
     });
