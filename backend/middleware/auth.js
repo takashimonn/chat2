@@ -1,54 +1,50 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const Session = require('../models/Session');
 
 const auth = async (req, res, next) => {
   try {
-    console.log('JWT_SECRET exists:', !!process.env.JWT_SECRET);
-    console.log('Headers:', req.headers);
-    
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    
-    if (!token) {
-      console.log('No token provided');
-      
-      return res.status(401).json({ message: 'No autorizado - Token no proporcionado' });
+    // Verificar que JWT_SECRET existe
+    if (!process.env.JWT_SECRET) {
+      console.error('JWT_SECRET no está definido');
+      return res.status(500).json({ message: 'Error de configuración del servidor' });
     }
+
+    // Obtener el token del header
+    const authHeader = req.header('Authorization');
+    console.log('Auth Header:', authHeader);
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Token no proporcionado o formato inválido' });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+
     try {
+      // Verificar el token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       console.log('Token decodificado:', decoded);
-      
-      // Verificar si existe una sesión activa con este token
-      const session = await Session.findOne({
-        token,
-        isActive: true
-      });
 
-      if (!session) {
-        // Si no hay sesión activa, desactivar cualquier otra sesión del usuario
-        await Session.updateMany(
-          { userId: decoded.id },
-          { isActive: false }
-        );
-        throw new Error('Sesión inválida');
-      }
-
-      // Obtener el usuario completo de la base de datos
+      // Buscar el usuario
       const user = await User.findById(decoded.id);
-      if (!user) {
-        throw new Error('Usuario no encontrado');
-      }
       
+      if (!user) {
+        return res.status(401).json({ message: 'Usuario no encontrado' });
+      }
+
+      // Verificar el rol si es necesario
+      if (req.baseUrl.includes('/api/tasks/teacher') && user.role !== 'maestro') {
+        return res.status(403).json({ message: 'Acceso no autorizado' });
+      }
+
+      // Agregar el usuario a la request
       req.user = user;
-      req.session = session;
-      console.log('Usuario autenticado:', user);
       next();
     } catch (error) {
-      console.log('Error al verificar token:', error.message);
+      console.error('Error al verificar token:', error);
       return res.status(401).json({ message: 'Token inválido' });
     }
   } catch (error) {
-    console.error('Error en autenticación:', error);
+    console.error('Error en middleware de autenticación:', error);
     res.status(500).json({ message: 'Error en el servidor' });
   }
 };

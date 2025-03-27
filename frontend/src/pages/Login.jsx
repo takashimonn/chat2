@@ -20,15 +20,18 @@ const Login = () => {
       });
 
       const data = await response.json();
-      console.log('Respuesta del servidor:', data); // Para debugging
-      console.log('Datos del usuario:', data.user); // Para debugging
+      console.log('Respuesta del login:', data); // Debug
 
       if (response.ok) {
-        // Guardar token y datos del usuario
         localStorage.setItem('token', data.token);
         localStorage.setItem('userId', data.user._id);
         localStorage.setItem('username', data.user.username);
         localStorage.setItem('userRole', data.user.role);
+
+        console.log('Datos guardados en localStorage:', {
+          token: !!localStorage.getItem('token'),
+          role: localStorage.getItem('userRole')
+        }); // Debug
 
         Swal.fire({
           icon: 'success',
@@ -36,12 +39,12 @@ const Login = () => {
           text: 'Inicio de sesión exitoso'
         });
 
-        navigate('/chat');
+        navigate('/tasks');
       } else {
         throw new Error(data.message || 'Error en el inicio de sesión');
       }
     } catch (error) {
-      console.error('Error de login:', error);
+      console.error('Error completo:', error);
       Swal.fire({
         icon: 'error',
         title: 'Error',

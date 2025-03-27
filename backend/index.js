@@ -17,6 +17,13 @@ const messageRoutes = require('./routes/messageRoutes');
 const authRoutes = require('./routes/authRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const subjectRoutes = require('./routes/subjectRoutes');
+const submissionRoutes = require('./routes/submissionRoutes');
+
+// Verificar variables de entorno al inicio
+console.log('Variables de entorno cargadas:', {
+  jwtSecretExists: !!process.env.JWT_SECRET,
+  mongoUriExists: !!process.env.MONGODB_URI
+});
 
 const app = express();
 const server = http.createServer(app);
@@ -76,6 +83,16 @@ app.use('/api/users', userRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/subjects', subjectRoutes);
+app.use('/api/submissions', submissionRoutes);
+
+// Manejo de errores global
+app.use((err, req, res, next) => {
+  console.error('Error no manejado:', err);
+  res.status(500).json({
+    message: 'Error interno del servidor',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
+});
 
 // Conexión a MongoDB con opciones adicionales
 mongoose.connect('mongodb+srv://diana3041220286:4tAumjAYPOEPdOZH@cluster0.fodfu92.mongodb.net/chat?retryWrites=true&w=majority', {

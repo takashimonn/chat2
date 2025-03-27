@@ -56,73 +56,34 @@ exports.register = async (req, res) => {
 // Controlador para el login de usuarios
 exports.login = async (req, res) => {
   try {
-    const { email, password, captchaToken } = req.body;
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
 
-    // Validar el captcha primero
-    const captchaResponse = await fetch('https://www.google.com/recaptcha/api/siteverify', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: `secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${captchaToken}`
-    });
-
-    const captchaData = await captchaResponse.json();
-
-    if (!captchaData.success) {
-      return res.status(400).json({ 
-        message: 'Por favor verifica que no eres un robot' 
-      });
+    if (!user || !(await user.comparePassword(password))) {
+      return res.status(401).json({ message: 'Credenciales inválidas' });
     }
 
-    let user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ mensaje: 'Credenciales inválidas' });
-    }
-
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(400).json({ mensaje: 'Credenciales inválidas' });
-    }
-
-    // Verificar si ya existe una sesión activa
-    const existingSession = await Session.findOne({ 
-      userId: user._id,
-      isActive: true 
-    });
-
-    if (existingSession) {
-      return res.status(400).json({ 
-        message: 'Ya existe una sesión activa en otro navegador',
-        hasActiveSession: true
-      });
-    }
-
-    // Crear token JWT incluyendo el rol
+    // Crear el token con el ID y el ROL del usuario
     const token = jwt.sign(
       { 
-        id: user._id, 
-        email: user.email,
+        id: user._id,
         role: user.role 
       },
       process.env.JWT_SECRET,
-      { expiresIn: '2h' }
+      { expiresIn: '24h' }
     );
 
-    // Crear nueva sesión
-    await Session.create({
+    console.log('Token generado:', {
       userId: user._id,
-      token,
-      isActive: true,
-      lastActive: new Date()
+      userRole: user.role,
+      tokenExists: !!token
     });
 
     res.json({
-      message: 'Login exitoso',
       user: {
         _id: user._id,
-        email: user.email,
         username: user.username,
+        email: user.email,
         role: user.role
       },
       token

@@ -21,20 +21,27 @@ const taskSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  assignedTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
   status: {
     type: String,
     enum: ['pending', 'submitted', 'graded'],
     default: 'pending'
   },
   grade: {
-    score: Number,
-    feedback: String,
-    gradedAt: Date,
-    gradedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    }
+    type: Number,
+    min: 0,
+    max: 100
   },
+  feedback: String,
+  gradedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  gradedAt: Date,
   submitted: {
     type: Boolean,
     default: false
@@ -44,7 +51,18 @@ const taskSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
-  submittedAt: Date
+  submittedAt: Date,
+  // Array de entregas de los estudiantes
+  submissions: [{
+    studentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    fileUrl: String,
+    submittedAt: Date,
+    grade: Number,
+    feedback: String
+  }]
 }, {
   timestamps: true
 });
