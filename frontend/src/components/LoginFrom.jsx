@@ -95,14 +95,17 @@ const LoginForm = () => {
       <div className="login-card">
         <div className="login-form-section">
           <div className="login-header">
-            <h1>Login to system</h1>
-            <p>Please enter your credentials</p>
+            <h1>Control Escolar</h1>
+            <p>Porfavor ingresa tus credenciales</p>
           </div>
 
           <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label htmlFor="email">Email</label>
               <div className="input-group">
+                <span className="input-icon">
+                  <i className="fas fa-envelope"></i>
+                </span>
                 <input
                   id="email"
                   name="email"
@@ -118,6 +121,9 @@ const LoginForm = () => {
             <div className="form-group">
               <label htmlFor="password">Password</label>
               <div className="input-group">
+                <span className="input-icon">
+                  <i className="fas fa-lock"></i>
+                </span>
                 <input
                   id="password"
                   name="password"
@@ -146,11 +152,17 @@ const LoginForm = () => {
             <button type="submit" className="login-button">
               Log in
             </button>
+
+            <div className="form-links">
+              <Link to="/register" className="register-link">
+                ¿No tienes una cuenta? Regístrate
+              </Link>
+            </div>
           </form>
         </div>
 
         <div className="login-visual-section">
-          <div className="wave-animation"></div>
+          {/* Removemos el div de wave-animation ya que no lo necesitamos */}
         </div>
       </div>
     </div>
