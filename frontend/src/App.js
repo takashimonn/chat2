@@ -9,12 +9,12 @@ import { useEffect } from 'react';
 import { logout } from './utils/auth';
 
 // Componente para proteger rutas
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute = ({ children, withSidebar = true }) => {
   const token = localStorage.getItem('token');
-  if (!token) {
+  if (!token) { 
     return <Navigate to="/" replace />;
   }
-  return <Layout>{children}</Layout>;
+  return withSidebar ? <Layout>{children}</Layout> : children;
 };
 
 function App() {
@@ -42,7 +42,7 @@ function App() {
         <Route 
           path="/dashboard" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute withSidebar={false}>
               <Dashboard />
             </ProtectedRoute>
           } 
