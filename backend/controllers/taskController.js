@@ -101,6 +101,52 @@ const taskController = {
       console.error('Error al calificar tarea:', error);
       res.status(500).json({ message: 'Error al calificar la tarea' });
     }
+  },
+
+  // Manejar la entrega de tarea
+  submitTask: async (req, res) => {
+    try {
+      console.log('Recibiendo entrega de tarea:', req.params.taskId); // Para debugging
+      console.log('Archivo recibido:', req.file); // Para debugging
+      
+      const { taskId } = req.params;
+      const file = req.file;
+
+      if (!file) {
+        return res.status(400).json({ message: 'Se requiere un archivo' });
+      }
+
+      const fileUrl = `/uploads/submissions/${file.filename}`;
+
+      // Verificar si la tarea existe
+      const taskExists = await Task.findById(taskId);
+      if (!taskExists) {
+        return res.status(404).json({ message: 'Tarea no encontrada' });
+      }
+
+      // Actualizar la tarea con la información de entrega
+      const updatedTask = await Task.findByIdAndUpdate(
+        taskId,
+        {
+          submitted: true,
+          submissionUrl: fileUrl,
+          submittedBy: req.user._id,
+          submittedAt: Date.now()
+        },
+        { new: true }
+      ).populate('createdBy', 'username')
+        .populate('subject', 'name');
+
+      console.log('Tarea actualizada:', updatedTask); // Para debugging
+
+      res.json(updatedTask);
+    } catch (error) {
+      console.error('Error detallado al entregar tarea:', error);
+      res.status(500).json({ 
+        message: 'Error al entregar la tarea',
+        error: error.message 
+      });
+    }
   }
 };
 

@@ -36,9 +36,16 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Crear directorio de uploads si no existe
-const uploadDir = path.join(__dirname, 'uploads', 'tasks');
-fs.mkdirSync(uploadDir, { recursive: true });
+// Crear directorios de uploads si no existen
+const uploadsDir = path.join(__dirname, 'uploads');
+const submissionsDir = path.join(uploadsDir, 'submissions');
+const tasksDir = path.join(uploadsDir, 'tasks');
+
+[uploadsDir, submissionsDir, tasksDir].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
 
 // Configurar ruta estática para archivos
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

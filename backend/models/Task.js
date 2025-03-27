@@ -5,18 +5,12 @@ const taskSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  description: {
-    type: String,
-    required: true
-  },
+  description: String,
   dueDate: {
     type: Date,
     required: true
   },
-  fileUrl: {
-    type: String,
-    required: true
-  },
+  fileUrl: String,
   subject: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Subject',
@@ -40,7 +34,17 @@ const taskSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
     }
-  }
+  },
+  submitted: {
+    type: Boolean,
+    default: false
+  },
+  submissionUrl: String,
+  submittedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  submittedAt: Date
 }, {
   timestamps: true
 });

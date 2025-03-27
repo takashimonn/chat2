@@ -21,6 +21,7 @@ const Tasks = () => {
   const [tasks, setTasks] = useState([]);
   const [entriesPerPage, setEntriesPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   // Mover fetchSubjects fuera del useEffect
   const fetchSubjects = async () => {
@@ -276,6 +277,58 @@ const Tasks = () => {
     }
   };
 
+  // Función para manejar la entrega de tarea
+  const handleSubmitTask = async (taskId) => {
+    try {
+      if (!selectedFile) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Por favor selecciona un archivo'
+        });
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      console.log('Enviando tarea:', taskId); // Para debugging
+      console.log('Archivo:', selectedFile); // Para debugging
+
+      const response = await fetch(`http://localhost:4000/api/tasks/${taskId}/submit`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Error al entregar la tarea');
+      }
+
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Éxito!',
+        text: 'Tarea entregada correctamente',
+        timer: 1500,
+        showConfirmButton: false
+      });
+
+      setSelectedFile(null);
+      fetchTasks();
+    } catch (error) {
+      console.error('Error:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.message || 'No se pudo entregar la tarea'
+      });
+    }
+  };
+
   return (
     <div className="tasks-container">
       <div className="tasks-header">
@@ -306,7 +359,7 @@ const Tasks = () => {
               <th>Título</th>
               <th>Materia</th>
               <th>Fecha de entrega</th>
-              <th>Acciones</th>
+              <th>{userRole === 'maestro' ? 'Acciones' : 'Entrega'}</th>
             </tr>
           </thead>
           <tbody>
@@ -326,33 +379,63 @@ const Tasks = () => {
                     <td>{task.subject.name}</td>
                     <td>{new Date(task.dueDate).toLocaleString()}</td>
                     <td>
-                      <div className="table-actions">
-                        <button 
-                          className="action-button"
-                          onClick={() => handleViewTask(task)}
-                          title="Ver detalles"
-                        >
-                          <i className="fas fa-eye"></i>
-                        </button>
-                        {userRole === 'maestro' && (
-                          <>
-                            <button 
-                              className="action-button"
-                              onClick={() => handleEditTask(task)}
-                              title="Editar"
-                            >
-                              <i className="fas fa-edit"></i>
-                            </button>
-                            <button 
-                              className="action-button"
-                              onClick={() => handleDeleteTask(task._id)}
-                              title="Eliminar"
-                            >
-                              <i className="fas fa-trash"></i>
-                            </button>
-                          </>
-                        )}
-                      </div>
+                      {userRole === 'maestro' ? (
+                        // Acciones para maestros
+                        <div className="table-actions">
+                          <button 
+                            className="action-button"
+                            onClick={() => handleViewTask(task)}
+                            title="Ver detalles"
+                          >
+                            <i className="fas fa-eye"></i>
+                          </button>
+                          <button 
+                            className="action-button"
+                            onClick={() => handleEditTask(task)}
+                            title="Editar"
+                          >
+                            <i className="fas fa-edit"></i>
+                          </button>
+                          <button 
+                            className="action-button"
+                            onClick={() => handleDeleteTask(task._id)}
+                            title="Eliminar"
+                          >
+                            <i className="fas fa-trash"></i>
+                          </button>
+                        </div>
+                      ) : (
+                        // Opciones de entrega para alumnos
+                        <div className="submit-task-container">
+                          {task.submitted ? (
+                            <span className="task-submitted">
+                              <i className="fas fa-check"></i> Entregada
+                            </span>
+                          ) : (
+                            <>
+                              <input
+                                type="file"
+                                id={`file-${task._id}`}
+                                onChange={(e) => setSelectedFile(e.target.files[0])}
+                                style={{ display: 'none' }}
+                              />
+                              <label 
+                                htmlFor={`file-${task._id}`} 
+                                className="file-upload-button"
+                              >
+                                <i className="fas fa-upload"></i> Seleccionar archivo
+                              </label>
+                              <button
+                                className="submit-task-button"
+                                onClick={() => handleSubmitTask(task._id)}
+                                disabled={!selectedFile}
+                              >
+                                Entregar
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </td>
                   </tr>
                 );

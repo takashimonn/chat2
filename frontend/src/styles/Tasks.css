@@ -262,4 +262,52 @@
   border: 1px solid #333;
   padding: 4px;
   border-radius: 4px;
+}
+
+.submit-task-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.file-upload-button {
+  background-color: #2196F3;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.file-upload-button:hover {
+  background-color: #1976D2;
+}
+
+.submit-task-button {
+  background-color: #4CAF50;
+  color: white;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.submit-task-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.task-submitted {
+  color: #4CAF50;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.task-submitted i {
+  font-size: 1.1rem;
 } 
