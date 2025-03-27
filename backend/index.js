@@ -6,6 +6,8 @@ const { createServer } = require('http');
 const mongoose = require('mongoose');
 const http = require('http');
 const { Server } = require('socket.io');
+const path = require('path');
+const fs = require('fs');
 
 const morgan = require('morgan');
 const initializeSocket = require('./socket');
@@ -13,6 +15,7 @@ const initializeSocket = require('./socket');
 const userRoutes = require('./routes/userRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 const authRoutes = require('./routes/authRoutes');
+const taskRoutes = require('./routes/taskRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -31,6 +34,13 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+
+// Crear directorio de uploads si no existe
+const uploadDir = path.join(__dirname, 'uploads', 'tasks');
+fs.mkdirSync(uploadDir, { recursive: true });
+
+// Configurar ruta estática para archivos
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
@@ -56,6 +66,7 @@ app.get('/socket-test', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/tasks', taskRoutes);
 
 // Conexión a MongoDB con opciones adicionales
 mongoose.connect('mongodb+srv://diana3041220286:4tAumjAYPOEPdOZH@cluster0.fodfu92.mongodb.net/chat?retryWrites=true&w=majority', {

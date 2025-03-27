@@ -18,6 +18,13 @@ const Sidebar = () => {
           <span>Inicio</span>
         </Link>
         <Link 
+          to="/tareas" 
+          className={`nav-item ${location.pathname === '/tareas' ? 'active' : ''}`}
+        >
+          <i className="fas fa-tasks"></i>
+          <span>Tareas</span>
+        </Link>
+        <Link 
           to="/calificaciones" 
           className={`nav-item ${location.pathname === '/calificaciones' ? 'active' : ''}`}
         >

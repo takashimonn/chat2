@@ -5,6 +5,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Calificaciones from './pages/Calificaciones';
 import Chat from './pages/Chat';
+import Tasks from './pages/Tasks';
 import { useEffect } from 'react';
 import { logout } from './utils/auth';
 
@@ -64,6 +65,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Chat />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/tareas" 
+          element={
+            <ProtectedRoute>
+              <Tasks />
             </ProtectedRoute>
           } 
         />
