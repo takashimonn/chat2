@@ -66,10 +66,22 @@
 
 .input-group {
   position: relative;
+  width: 85%;
+}
+
+.input-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #666;
+  pointer-events: none;
 }
 
 .input-group input {
-  width: 85%;
+  width: 100%;
+  padding-left: 35px !important;
+  text-indent: 0;
   padding: 16px 16px 16px 48px;
   background-color: #2a2a2a;
   border: 1px solid #3a3a3a;
@@ -83,15 +95,6 @@
   border-color: #6366f1;
   outline: none;
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
-}
-
-.input-icon {
-  position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #9ca3af;
-  font-size: 20px;
 }
 
 .login-button {
