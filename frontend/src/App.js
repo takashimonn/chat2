@@ -1,6 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import Layout from './components/Layout';
 import LoginForm from './components/LoginFrom';
 import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
+import Calificaciones from './pages/Calificaciones';
 import Chat from './pages/Chat';
 import { useEffect } from 'react';
 import { logout } from './utils/auth';
@@ -11,7 +14,7 @@ const ProtectedRoute = ({ children }) => {
   if (!token) {
     return <Navigate to="/" replace />;
   }
-  return children;
+  return <Layout>{children}</Layout>;
 };
 
 function App() {
@@ -36,6 +39,22 @@ function App() {
       <Routes>
         <Route path="/" element={<LoginForm />} />
         <Route path="/register" element={<Register />} />
+        <Route 
+          path="/dashboard" 
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/calificaciones" 
+          element={
+            <ProtectedRoute>
+              <Calificaciones />
+            </ProtectedRoute>
+          } 
+        />
         <Route 
           path="/chat" 
           element={

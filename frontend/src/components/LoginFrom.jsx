@@ -78,7 +78,7 @@ const LoginForm = () => {
           showConfirmButton: false
         });
         
-        navigate('/chat');
+        navigate('/dashboard');
       }
     } catch (error) {
       console.error('Error al iniciar sesión:', error);
