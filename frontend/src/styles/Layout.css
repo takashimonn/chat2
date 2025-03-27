@@ -1,11 +1,17 @@
 .layout {
   display: flex;
+  min-height: 100vh;
 }
 
 .main-content {
   flex: 1;
   margin-left: 250px;
   padding: 2rem;
-  min-height: 100vh;
   background-color: #f5f5f5;
+}
+
+/* Excepción para el Dashboard */
+.dashboard {
+  margin-left: 0; /* Eliminar el margen para el dashboard ya que no tiene sidebar */
+  padding: 2rem;
 } 

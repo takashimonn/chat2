@@ -14,7 +14,11 @@ const ProtectedRoute = ({ children, withSidebar = true }) => {
   if (!token) { 
     return <Navigate to="/" replace />;
   }
-  return withSidebar ? <Layout>{children}</Layout> : children;
+  return withSidebar ? (
+    <Layout>{children}</Layout>
+  ) : (
+    <div className="full-width">{children}</div>
+  );
 };
 
 function App() {
