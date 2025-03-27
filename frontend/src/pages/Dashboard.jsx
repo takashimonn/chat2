@@ -23,10 +23,10 @@ const Dashboard = () => {
       color: "#e3f2fd"
     },
     {
-      title: "Calificaciones",
-      description: "Consulta tus calificaciones, histórico académico y progreso en cada materia.",
+      title: "Tareas",
+      description: "Gestiona las tareas del curso",
       image: "/images/calificaciones.png",
-      path: "/calificaciones",
+      path: "/tareas",
       color: "#f3e5f5"
     },
     {
