@@ -238,6 +238,91 @@ const TeacherView = () => {
     fetchSubjects();
   }, []);
 
+  const handleViewSubmission = (task, submission) => {
+    Swal.fire({
+      title: 'Detalles de la Entrega',
+      html: `
+        <div class="submission-details">
+          <div class="detail-row"><strong>Tarea:</strong> <span>${task.title}</span></div>
+          <div class="detail-row"><strong>Estudiante:</strong> <span>${submission.student?.username || 'No disponible'}</span></div>
+          <div class="detail-row"><strong>Estado:</strong> <span>${submission.status || 'Pendiente'}</span></div>
+          <div class="detail-row"><strong>Fecha de entrega:</strong> <span>${new Date(submission.createdAt).toLocaleString()}</span></div>
+          <div class="detail-row"><strong>Comentarios:</strong> <span>${submission.comments || 'Sin comentarios'}</span></div>
+          ${submission.fileUrl ? `<div class="detail-row"><strong>Archivo:</strong> <span><a href="${submission.fileUrl}" target="_blank">Ver archivo</a></span></div>` : ''}
+        </div>
+      `,
+      width: '600px',
+      confirmButtonText: 'Cerrar',
+      customClass: {
+        container: 'submission-modal',
+        popup: 'submission-popup',
+        content: 'submission-content'
+      }
+    });
+  };
+
+  const handleViewTask = (task) => {
+    Swal.fire({
+      title: 'Detalles de la Tarea',
+      html: `
+        <div class="task-details">
+          <p><strong>Título:</strong> ${task.title}</p>
+          <p><strong>Materia:</strong> ${task.subject?.name}</p>
+          <p><strong>Descripción:</strong> ${task.description}</p>
+          <p><strong>Fecha límite:</strong> ${new Date(task.dueDate).toLocaleString()}</p>
+          <p><strong>Estado de entregas:</strong></p>
+          <ul>
+            <li>Total de estudiantes: ${task.submissions?.length || 0}</li>
+            <li>Entregas pendientes: ${task.submissions?.filter(s => s.status === 'pending').length || 0}</li>
+            <li>Entregas realizadas: ${task.submissions?.filter(s => s.status === 'submitted').length || 0}</li>
+          </ul>
+        </div>
+      `,
+      width: '600px',
+      confirmButtonText: 'Cerrar',
+      showCancelButton: false
+    });
+  };
+
+  const renderTaskTable = () => {
+    return (
+      <table className="tasks-table">
+        <thead>
+          <tr>
+            <th>Estado</th>
+            <th>Título de la Tarea</th>
+            <th>Materia</th>
+            <th>Estudiante</th>
+            <th>Fecha de Entrega</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tasks.map(task => (
+            task.submissions?.map((submission, index) => (
+              <tr key={`${task._id}-${submission._id}-${index}`}>
+                <td>{submission.status || 'Pendiente'}</td>
+                <td>{task.title}</td>
+                <td>{task.subject?.name}</td>
+                <td>{submission.student?.username || 'No disponible'}</td>
+                <td>{new Date(task.dueDate).toLocaleString()}</td>
+                <td>
+                  <button
+                    className="action-button view-button"
+                    onClick={() => handleViewSubmission(task, submission)}
+                    title="Ver entrega"
+                  >
+                    <i className="fas fa-eye"></i>
+                  </button>
+                </td>
+              </tr>
+            ))
+          ))}
+        </tbody>
+      </table>
+    );
+  };
+
   return (
     <div className="tasks-container">
       <div className="buttons-container">
@@ -361,50 +446,7 @@ const TeacherView = () => {
       </div>
 
       <div className="tasks-table-container">
-        <table className="tasks-table">
-          <thead>
-            <tr>
-              <th>Estado</th>
-              <th>Título</th>
-              <th>Materia</th>
-              <th>Estudiantes que entregaron</th>
-              <th>Fecha límite</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tasks.map(task => {
-              const taskSubmissions = submissions[task._id] || [];
-              return (
-                <tr key={task._id}>
-                  <td>
-                    <div className="status-indicator">
-                      <span className={`status-dot status-${taskSubmissions.length > 0 ? 'submitted' : 'pending'}`}></span>
-                      {taskSubmissions.length > 0 ? `${taskSubmissions.length} entregas` : 'Sin entregas'}
-                    </div>
-                  </td>
-                  <td>{task.title}</td>
-                  <td>{task.subject?.name}</td>
-                  <td>
-                    {taskSubmissions.map(sub => sub.student?.username).join(', ') || 'Ninguno'}
-                  </td>
-                  <td>{new Date(task.dueDate).toLocaleString()}</td>
-                  <td>
-                    <div className="table-actions">
-                      <button 
-                        className="action-button"
-                        onClick={() => handleViewSubmissions(task, taskSubmissions)}
-                        title="Ver entregas"
-                      >
-                        <i className="fas fa-eye"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        {renderTaskTable()}
       </div>
     </div>
   );

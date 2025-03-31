@@ -35,12 +35,20 @@ const auth = async (req, res, next) => {
         return res.status(403).json({ message: 'Acceso no autorizado' });
       }
 
+      // Asegurarnos que el rol esté incluido en el token
+      if (!decoded.role) {
+        return res.status(403).json({ message: 'No role specified' });
+      }
+
       // Agregar el usuario a la request
       req.user = user;
       next();
     } catch (error) {
       console.error('Error al verificar token:', error);
-      return res.status(401).json({ message: 'Token inválido' });
+      if (error.name === 'TokenExpiredError') {
+        return res.status(401).json({ message: 'Token expirado' });
+      }
+      res.status(401).json({ message: 'Token inválido' });
     }
   } catch (error) {
     console.error('Auth error:', error);

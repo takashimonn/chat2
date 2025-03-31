@@ -197,44 +197,44 @@ const taskController = {
   // Obtener tareas para maestros (con información de entregas)
   getTeacherTasks: async (req, res) => {
     try {
-      console.log('Usuario solicitando tareas:', {
-        id: req.user._id,
-        role: req.user.role,
-        username: req.user.username
-      });
-
-      // Verificar que el usuario sea maestro
       if (req.user.role !== 'maestro') {
-        console.log('Intento de acceso no autorizado - Role:', req.user.role);
         return res.status(403).json({ message: 'Acceso no autorizado' });
       }
 
-      const tasks = await Task.find()
+      const tasks = await Task.find({ teacher: req.user.id })
         .populate('subject', 'name')
-        .populate('createdBy', 'username')
-        .sort({ createdAt: -1 });
+        .lean();
 
-      console.log('Tareas encontradas:', tasks.length);
-
-      // Para cada tarea, obtener sus entregas
       const tasksWithSubmissions = await Promise.all(tasks.map(async (task) => {
-        const submissions = await Submission.find({ task: task._id })
-          .populate('student', 'username');
-        
+        const submissions = await Submission.find({ taskId: task._id })
+          .populate({
+            path: 'studentId',
+            select: 'username email'
+          })
+          .lean();
+
+        const formattedSubmissions = submissions.map(submission => ({
+          studentId: submission.studentId?._id,
+          username: submission.studentId?.username,
+          status: submission.status,
+          submittedAt: submission.submittedAt,
+          fileUrl: submission.fileUrl,
+          comment: submission.comment,
+          grade: submission.grade
+        }));
+
+        console.log('Submissions formateadas:', formattedSubmissions);
+
         return {
-          ...task.toObject(),
-          submissions: submissions
+          ...task,
+          submissions: formattedSubmissions
         };
       }));
 
-      console.log('Tareas procesadas con entregas:', tasksWithSubmissions.length);
       res.json(tasksWithSubmissions);
     } catch (error) {
-      console.error('Error detallado al obtener tareas del maestro:', error);
-      res.status(500).json({ 
-        message: 'Error al obtener las tareas',
-        error: error.message 
-      });
+      console.error('Error al obtener tareas:', error);
+      res.status(500).json({ message: 'Error al obtener las tareas' });
     }
   },
 

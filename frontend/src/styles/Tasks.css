@@ -532,7 +532,7 @@
 }
 
 .form-group label {
-  display: block;
+  /* display: block; */
   margin-bottom: 0.5rem;
   color: #333;
 }
@@ -568,4 +568,67 @@
 .modal-buttons button[type="button"] {
   background-color: #f44336;
   color: white;
+}
+
+/* Estilos para el modal de submissions */
+.submission-modal .swal2-html-container {
+  text-align: left !important;
+}
+
+.submission-popup {
+  padding: 20px;
+}
+
+.submission-content {
+  margin: 0;
+}
+
+.submission-details {
+  text-align: left;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.detail-row {
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: center;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-row strong {
+  color: #666;
+  width: 140px;
+  display: inline-block;
+}
+
+.detail-row span {
+  flex: 1;
+}
+
+.detail-row a {
+  color: #4a90e2;
+  text-decoration: none;
+}
+
+.detail-row a:hover {
+  text-decoration: underline;
+}
+
+/* Estilo para el título del modal */
+.swal2-title {
+  color: #333;
+  font-size: 1.5em;
+  margin-bottom: 20px;
+}
+
+/* Estilo para el botón de cerrar */
+.swal2-confirm {
+  background-color: #4a90e2 !important;
+  border-radius: 4px !important;
 } 
