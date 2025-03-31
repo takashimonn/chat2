@@ -3,21 +3,20 @@ const User = require('../models/User');
 
 const auth = async (req, res, next) => {
   try {
-    // Verificar que JWT_SECRET existe
+    // Agregar log para debugging
+    console.log('JWT_SECRET:', !!process.env.JWT_SECRET);
+    console.log('Headers:', req.headers);
+
+    const token = req.headers.authorization?.split(' ')[1];
+    
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
+
     if (!process.env.JWT_SECRET) {
-      console.error('JWT_SECRET no está definido');
-      return res.status(500).json({ message: 'Error de configuración del servidor' });
+      console.error('JWT_SECRET is not defined');
+      return res.status(500).json({ message: 'Server configuration error' });
     }
-
-    // Obtener el token del header
-    const authHeader = req.header('Authorization');
-    console.log('Auth Header:', authHeader);
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'Token no proporcionado o formato inválido' });
-    }
-
-    const token = authHeader.replace('Bearer ', '');
 
     try {
       // Verificar el token
@@ -44,7 +43,7 @@ const auth = async (req, res, next) => {
       return res.status(401).json({ message: 'Token inválido' });
     }
   } catch (error) {
-    console.error('Error en middleware de autenticación:', error);
+    console.error('Auth error:', error);
     res.status(500).json({ message: 'Error en el servidor' });
   }
 };

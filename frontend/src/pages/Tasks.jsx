@@ -2,12 +2,34 @@ import React, { useState, useEffect } from 'react';
 import '../styles/Tasks.css';
 import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
-const TeacherView = ({ tasks }) => {
+const axiosInstance = axios.create({
+  baseURL: 'http://localhost:4000',
+  headers: {
+    'Authorization': `Bearer ${localStorage.getItem('token')}`
+  }
+});
+
+const TeacherView = () => {
+  const [tasks, setTasks] = useState([]);
+  const [subjects, setSubjects] = useState([]);
   const [submissions, setSubmissions] = useState({});
   const [filterStatus, setFilterStatus] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [entriesPerPage, setEntriesPerPage] = useState(10);
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [showSubjectModal, setShowSubjectModal] = useState(false);
+  const [newTask, setNewTask] = useState({
+    title: '',
+    description: '',
+    dueDate: '',
+    subject: ''
+  });
+  const [newSubject, setNewSubject] = useState({
+    name: '',
+    description: ''
+  });
 
   const fetchSubmissions = async (taskId) => {
     try {
@@ -137,8 +159,194 @@ const TeacherView = ({ tasks }) => {
     });
   };
 
+  const handleCreateTask = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axiosInstance.post('/api/tasks', newTask);
+      setTasks(prev => [...prev, response.data]);
+      setShowTaskModal(false);
+      setNewTask({ title: '', description: '', dueDate: '', subject: '' });
+      Swal.fire({
+        icon: 'success',
+        title: '¡Éxito!',
+        text: 'Tarea creada correctamente'
+      });
+      fetchTasks();
+    } catch (error) {
+      console.error('Error al crear la tarea:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Error al crear la tarea'
+      });
+    }
+  };
+
+  const handleCreateSubject = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axiosInstance.post('/api/subjects', newSubject);
+      setSubjects(prev => [...prev, response.data]);
+      setShowSubjectModal(false);
+      setNewSubject({ name: '', description: '' });
+      Swal.fire({
+        icon: 'success',
+        title: '¡Éxito!',
+        text: 'Materia creada correctamente'
+      });
+      fetchSubjects();
+    } catch (error) {
+      console.error('Error al crear la materia:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Error al crear la materia'
+      });
+    }
+  };
+
+  const fetchTasks = async () => {
+    try {
+      const response = await axiosInstance.get('/api/tasks/teacher');
+      setTasks(response.data);
+    } catch (error) {
+      console.error('Error al obtener las tareas:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Error al cargar las tareas'
+      });
+    }
+  };
+
+  const fetchSubjects = async () => {
+    try {
+      const response = await axiosInstance.get('/api/subjects');
+      setSubjects(response.data);
+    } catch (error) {
+      console.error('Error al obtener las materias:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Error al cargar las materias'
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchTasks();
+    fetchSubjects();
+  }, []);
+
   return (
-    <>
+    <div className="tasks-container">
+      <div className="buttons-container">
+        <button 
+          className="create-button"
+          onClick={() => setShowTaskModal(true)}
+        >
+          <i className="fas fa-plus"></i> Asignar Nueva Tarea
+        </button>
+        <button 
+          className="create-button"
+          onClick={() => setShowSubjectModal(true)}
+        >
+          <i className="fas fa-book"></i> Crear Nueva Materia
+        </button>
+      </div>
+
+      {/* Modal para crear tarea */}
+      {showTaskModal && (
+        <div className="modal">
+          <div className="modal-content">
+            <h2>Crear Nueva Tarea</h2>
+            <form onSubmit={handleCreateTask}>
+              <div className="form-group">
+                <label>Título:</label>
+                <input
+                  type="text"
+                  value={newTask.title}
+                  onChange={(e) => setNewTask({...newTask, title: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Descripción:</label>
+                <textarea
+                  value={newTask.description}
+                  onChange={(e) => setNewTask({...newTask, description: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Fecha de entrega:</label>
+                <input
+                  type="date"
+                  value={newTask.dueDate}
+                  onChange={(e) => setNewTask({...newTask, dueDate: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Materia:</label>
+                <select
+                  value={newTask.subject}
+                  onChange={(e) => setNewTask({...newTask, subject: e.target.value})}
+                  required
+                >
+                  <option value="">Selecciona una materia</option>
+                  {subjects.map((subject) => (
+                    <option key={subject._id} value={subject._id}>
+                      {subject.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="modal-buttons">
+                <button type="submit">Crear</button>
+                <button type="button" onClick={() => setShowTaskModal(false)}>
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para crear materia */}
+      {showSubjectModal && (
+        <div className="modal">
+          <div className="modal-content">
+            <h2>Crear Nueva Materia</h2>
+            <form onSubmit={handleCreateSubject}>
+              <div className="form-group">
+                <label>Nombre:</label>
+                <input
+                  type="text"
+                  value={newSubject.name}
+                  onChange={(e) => setNewSubject({...newSubject, name: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Descripción:</label>
+                <textarea
+                  value={newSubject.description}
+                  onChange={(e) => setNewSubject({...newSubject, description: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="modal-buttons">
+                <button type="submit">Crear</button>
+                <button type="button" onClick={() => setShowSubjectModal(false)}>
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <div className="filter-container">
         <select 
           value={filterStatus} 
@@ -198,7 +406,7 @@ const TeacherView = ({ tasks }) => {
           </tbody>
         </table>
       </div>
-    </>
+    </div>
   );
 };
 
@@ -400,7 +608,7 @@ const Tasks = () => {
   return (
     <div className="tasks-container">
       {userRole === 'maestro' ? (
-        <TeacherView tasks={tasks} />
+        <TeacherView />
       ) : (
         <StudentView tasks={tasks} />
       )}

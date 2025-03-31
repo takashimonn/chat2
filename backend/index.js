@@ -25,6 +25,9 @@ console.log('Variables de entorno cargadas:', {
   mongoUriExists: !!process.env.MONGODB_URI
 });
 
+// Verificar que la variable existe
+console.log('JWT_SECRET exists:', !!process.env.JWT_SECRET);
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
