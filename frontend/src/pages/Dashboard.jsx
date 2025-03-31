@@ -1,17 +1,45 @@
 import { Link, useNavigate } from 'react-router-dom';
 import '../styles/Dashboard.css';
-import { logout } from '../utils/auth';
+import Swal from 'sweetalert2';
+import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
 
 const Dashboard = () => {
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/', { replace: true });
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-    }
+  const handleLogout = () => {
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: "¿Deseas cerrar la sesión?",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, cerrar sesión',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const email = localStorage.getItem('email');
+        axiosInstance.post('/auth/logout', { email })
+          .then(() => {
+            localStorage.clear();
+            navigate('/');
+            Swal.fire(
+              '¡Sesión cerrada!',
+              'Has cerrado sesión exitosamente',
+              'success'
+            );
+          })
+          .catch(error => {
+            console.error('Error al cerrar sesión:', error);
+            Swal.fire(
+              'Error',
+              'No se pudo cerrar la sesión',
+              'error'
+            );
+          });
+      }
+    });
   };
 
   const cards = [
@@ -46,9 +74,9 @@ const Dashboard = () => {
         <p>Selecciona una opción para comenzar</p>
       </div>
 
-      <button onClick={handleLogout} className="logout-button">
-        <span className="material-icons-round">logout</span>
-        <span className="logout-button-text">Cerrar Sesión</span>
+      <button onClick={handleLogout} className="logout-button-dash">
+        <i className="fas fa-sign-out-alt"></i>
+        Cerrar Sesión
       </button>
 
       <div className="cards-container">

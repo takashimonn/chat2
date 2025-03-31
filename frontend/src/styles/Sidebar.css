@@ -7,6 +7,8 @@
   position: fixed;
   left: 0;
   top: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-header {
@@ -22,6 +24,7 @@
 
 .sidebar-nav {
   padding: 15px 0;
+  flex: 1;
 }
 
 .nav-item {
@@ -58,4 +61,38 @@
 .dashboard {
   margin-left: 250px;
   padding: 20px;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 10px;
+  display: flex;
+  justify-content: center;
+}
+
+.sidebar-footer .nav-item {
+  width: 100%;
+  text-align: left;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 } 
+
+.sidebar-footer{
+  display: flex;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: rgb(206, 45, 45);
+}
+
+.boton-logout{
+  display: flex;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: rgb(206, 45, 45);
+  margin-bottom: 2rem;
+  font-size: .9rem;
+}

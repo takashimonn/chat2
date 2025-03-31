@@ -133,4 +133,27 @@
 
 .card:hover .card-button {
   background-color: #1d4ed8;
+}
+
+.logout-button-dash {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  padding: 8px 16px;
+  background-color: transparent;
+  color: #ff4444;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+}
+
+.logout-button-dash:hover {
+  color: #ff0000;
+}
+
+.logout-button-dash i {
+  font-size: 16px;
 } 

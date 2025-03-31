@@ -57,37 +57,50 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
 
-    if (!user || !(await user.comparePassword(password))) {
+    // Primero verificar si ya existe una sesión activa
+    const activeSession = await Session.findOne({ 
+      email: email,
+      isActive: true 
+    });
+
+    if (activeSession) {
+      return res.status(400).json({
+        message: 'Ya existe una sesión activa en otro navegador',
+        hasActiveSession: true
+      });
+    }
+
+    // Si no hay sesión activa, continuar con el login
+    const user = await User.findOne({ email });
+    if (!user || !await user.comparePassword(password)) {
       return res.status(401).json({ message: 'Credenciales inválidas' });
     }
 
-    // Crear el token con el ID y el ROL del usuario
     const token = jwt.sign(
-      { 
-        id: user._id,
-        role: user.role 
-      },
+      { id: user._id, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '8h' }
     );
 
-    console.log('Token generado:', {
+    // Crear nueva sesión
+    await Session.create({
       userId: user._id,
-      userRole: user.role,
-      tokenExists: !!token
+      email: user.email,
+      token: token,
+      isActive: true
     });
 
     res.json({
+      token,
       user: {
-        _id: user._id,
+        id: user._id,
         username: user.username,
         email: user.email,
         role: user.role
-      },
-      token
+      }
     });
+
   } catch (error) {
     console.error('Error en login:', error);
     res.status(500).json({ message: 'Error en el servidor' });
@@ -102,5 +115,36 @@ exports.getUser = async (req, res) => {
   } catch (error) {
     console.error(error.message);
     res.status(500).json({ mensaje: 'Error en el servidor' });
+  }
+};
+
+exports.checkSession = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const existingSession = await Session.findOne({ 
+      email: email,
+      isActive: true 
+    });
+    
+    res.json({ hasActiveSession: !!existingSession });
+  } catch (error) {
+    console.error('Error al verificar sesión:', error);
+    res.status(500).json({ message: 'Error al verificar sesión' });
+  }
+};
+
+exports.logout = async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    await Session.findOneAndUpdate(
+      { email: email, isActive: true },
+      { isActive: false }
+    );
+
+    res.json({ message: 'Sesión cerrada correctamente' });
+  } catch (error) {
+    console.error('Error en logout:', error);
+    res.status(500).json({ message: 'Error al cerrar sesión' });
   }
 };

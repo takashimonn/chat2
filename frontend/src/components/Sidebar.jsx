@@ -1,8 +1,48 @@
 import { Link, useLocation } from 'react-router-dom';
 import '../styles/Sidebar.css';
+import Swal from 'sweetalert2';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import axiosInstance from '../utils/axiosConfig';
 
 const Sidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: "¿Deseas cerrar la sesión?",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, cerrar sesión',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const email = localStorage.getItem('email');
+        axiosInstance.post('/auth/logout', { email })
+          .then(() => {
+            localStorage.clear();
+            navigate('/');
+            Swal.fire(
+              '¡Sesión cerrada!',
+              'Has cerrado sesión exitosamente',
+              'success'
+            );
+          })
+          .catch(error => {
+            console.error('Error al cerrar sesión:', error);
+            Swal.fire(
+              'Error',
+              'No se pudo cerrar la sesión',
+              'error'
+            );
+          });
+      }
+    });
+  };
 
   return (
     <div className="sidebar">
@@ -39,6 +79,13 @@ const Sidebar = () => {
           <span>Chat</span>
         </Link>
       </nav>
+
+      <div className="sidebar-footer">
+        <button onClick={handleLogout} className="boton-logout">
+          <i className="fas fa-sign-out-alt"></i>
+          Cerrar Sesión
+        </button>
+      </div>
     </div>
   );
 };
