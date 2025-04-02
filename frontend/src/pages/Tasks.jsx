@@ -277,6 +277,73 @@ const TeacherView = () => {
     });
   };
 
+  const handleGradeTask = (task, student) => {
+    Swal.fire({
+      title: 'Calificar Tarea',
+      html: `
+        <div class="grade-form">
+          <p><strong>Tarea:</strong> ${task.title}</p>
+          <p><strong>Estudiante:</strong> ${student.username}</p>
+          <div class="form-group">
+            <label>Calificación (0-100):</label>
+            <input type="number" id="grade" min="0" max="100" class="swal2-input">
+          </div>
+          <div class="form-group">
+            <label>Retroalimentación:</label>
+            <textarea id="feedback" class="swal2-textarea"></textarea>
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Guardar',
+      cancelButtonText: 'Cancelar',
+      preConfirm: () => {
+        const grade = document.getElementById('grade').value;
+        const feedback = document.getElementById('feedback').value;
+        if (!grade) {
+          Swal.showValidationMessage('Por favor ingresa una calificación');
+          return false;
+        }
+        return { grade, feedback };
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        handleSubmitGrade(task._id, student._id, result.value.grade, result.value.feedback);
+      }
+    });
+  };
+
+  const handleSubmitGrade = async (taskId, studentId, grade, feedback) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`http://localhost:4000/api/tasks/${taskId}/grade`, {
+        studentId,
+        grade,
+        feedback
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.data) {
+        Swal.fire({
+          icon: 'success',
+          title: '¡Éxito!',
+          text: 'Calificación guardada correctamente'
+        });
+        fetchTasks(); // Actualizar la lista de tareas
+      }
+    } catch (error) {
+      console.error('Error al calificar:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo guardar la calificación'
+      });
+    }
+  };
+
   const renderTaskTable = () => {
     console.log('Tasks a renderizar:', tasks);
   
@@ -302,7 +369,20 @@ const TeacherView = () => {
                 <td>{submission.student?.username || 'Desconocido'}</td>
                 <td>{new Date(submission.createdAt).toLocaleString()}</td>
                 <td>
-                  <button onClick={() => handleViewSubmission(task, submission)}>Ver</button>
+                  <button
+                    className="action-button view-button"
+                    onClick={() => handleViewSubmission(task, submission)}
+                    title="Ver tarea"
+                  >
+                    <i className="fas fa-eye"></i>
+                  </button>
+                  <button
+                    className="action-button grade-button"
+                    onClick={() => handleGradeTask(task, submission.student)}
+                    title="Calificar tarea"
+                  >
+                    <i className="fas fa-check-circle"></i>
+                  </button>
                 </td>
               </tr>
             ))
@@ -311,54 +391,6 @@ const TeacherView = () => {
       </table>
     );
   };
-  //   console.log('Tasks a renderizar:', tasks);
-
-  //   return (
-  //     <table className="tasks-table">
-  //       <thead>
-  //         <tr>
-  //           <th>Estado</th>
-  //           <th>Título de la Tarea</th>
-  //           <th>Materia</th>
-  //           <th>Estudiante</th>
-  //           <th>Fecha de Entrega</th>
-  //           <th>Acciones</th>
-  //         </tr>
-  //       </thead>
-  //       <tbody>
-  //         {tasks && tasks.length > 0 ? (
-  //           tasks.flatMap(task => 
-  //             // Si no hay estudiantes asignados, mostrar al menos una fila
-  //             (task.students && task.students.length > 0 ? task.students : [{ _id: 'none', username: 'Sin asignar' }]).map(student => (
-  //               <tr key={`${task._id}-${student._id}`}>
-  //                 <td>{student.status || 'Pendiente'}</td>
-  //                 <td>{task.title}</td>
-  //                 <td>{task.subject?.name}</td>
-  //                 <td>{student.username}</td>
-  //                 <td>{new Date(task.dueDate).toLocaleString()}</td>
-  //                 <td>
-  //                   <button
-  //                     className="action-button view-button"
-  //                     onClick={() => handleViewTask(task, student)}
-  //                     title="Ver tarea"
-  //                   >
-  //                     <i className="fas fa-eye"></i>
-  //                   </button>
-  //                 </td>
-  //               </tr>
-  //             ))
-  //           )
-  //         ) : (
-  //           <tr>
-  //             <td colSpan="6" className="no-tasks">
-  //               No hay tareas disponibles
-  //             </td>
-  //           </tr>
-  //         )}
-  //       </tbody>
-  //     </table>
-  //   );
-  // };
 
   return (
     <div className="tasks-container">
@@ -696,4 +728,6 @@ const Tasks = () => {
 };
 
 export default Tasks;
+
+
 

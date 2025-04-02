@@ -457,15 +457,6 @@ const Chat = () => {
     setSelectedSubject(subject);
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/');
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-    }
-  };
-
   const getFilterIcon = (filter) => {
     switch (filter) {
       case "todos":
@@ -541,10 +532,7 @@ const Chat = () => {
       <div className={`subjects-panel ${!showSubjects ? 'subjects-panel-collapsed' : ''}`}>
         <div className="subjects-header">
           <h2>Materias</h2>
-          <button onClick={handleLogout} className="logout-button">
-            <span className="material-icons-round">logout</span>
-            <span>Cerrar Sesión</span>
-          </button>
+
         </div>
         <div className="subjects-list">
           {subjects.map((subject) => (
