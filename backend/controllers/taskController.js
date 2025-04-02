@@ -2,6 +2,7 @@ const Task = require('../models/Task');
 const fs = require('fs').promises;
 const path = require('path');
 const Submission = require('../models/Submission');
+const User = require('../models/User');
 
 const taskController = {
   // Crear nueva tarea
@@ -201,38 +202,33 @@ const taskController = {
         return res.status(403).json({ message: 'Acceso no autorizado' });
       }
 
+      // Obtener todas las tareas del profesor
       const tasks = await Task.find({ createdBy: req.user._id })
         .populate('subject', 'name')
         .populate('createdBy', 'username')
         .lean();
 
-      const tasksWithSubmissions = await Promise.all(tasks.map(async (task) => {
-        const submissions = await Submission.find({ taskId: task._id })
-          .populate({
-            path: 'studentId',
-            select: 'username email'
-          })
-          .lean();
+      // Obtener todos los usuarios con rol de alumno
+      const students = await User.find({ role: 'alumno' }, 'username email').lean();
 
-        const formattedSubmissions = submissions.map(submission => ({
-          studentId: submission.studentId?._id,
-          username: submission.studentId?.username,
-          status: submission.status,
-          submittedAt: submission.submittedAt,
-          fileUrl: submission.fileUrl,
-          comment: submission.comment,
-          grade: submission.grade
-        }));
+      // Crear un array con una entrada por cada combinación de tarea-estudiante
+      const expandedTasks = [];
 
-        console.log('Submissions formateadas:', formattedSubmissions);
+      tasks.forEach(task => {
+        students.forEach(student => {
+          expandedTasks.push({
+            ...task,
+            student: {
+              _id: student._id,
+              username: student.username,
+              email: student.email
+            },
+            status: 'Pendiente' // Por defecto, se puede actualizar si hay submission
+          });
+        });
+      });
 
-        return {
-          ...task,
-          submissions: formattedSubmissions
-        };
-      }));
-
-      res.json(tasksWithSubmissions);
+      res.json(expandedTasks);
     } catch (error) {
       console.error('Error al obtener tareas:', error);
       res.status(500).json({ message: 'Error al obtener las tareas' });

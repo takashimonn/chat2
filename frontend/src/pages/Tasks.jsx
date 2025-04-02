@@ -277,32 +277,9 @@ const TeacherView = () => {
     });
   };
 
-  const handleViewTask = (task) => {
-    Swal.fire({
-      title: 'Detalles de la Tarea',
-      html: `
-        <div class="task-details">
-          <p><strong>Título:</strong> ${task.title}</p>
-          <p><strong>Materia:</strong> ${task.subject?.name}</p>
-          <p><strong>Descripción:</strong> ${task.description}</p>
-          <p><strong>Fecha límite:</strong> ${new Date(task.dueDate).toLocaleString()}</p>
-          <p><strong>Estado de entregas:</strong></p>
-          <ul>
-            <li>Total de estudiantes: ${task.submissions?.length || 0}</li>
-            <li>Entregas pendientes: ${task.submissions?.filter(s => s.status === 'pending').length || 0}</li>
-            <li>Entregas realizadas: ${task.submissions?.filter(s => s.status === 'submitted').length || 0}</li>
-          </ul>
-        </div>
-      `,
-      width: '600px',
-      confirmButtonText: 'Cerrar',
-      showCancelButton: false
-    });
-  };
-
   const renderTaskTable = () => {
     console.log('Tasks a renderizar:', tasks);
-
+  
     return (
       <table className="tasks-table">
         <thead>
@@ -316,39 +293,72 @@ const TeacherView = () => {
           </tr>
         </thead>
         <tbody>
-          {tasks && tasks.length > 0 ? (
-            tasks.flatMap(task => 
-              // Si no hay estudiantes asignados, mostrar al menos una fila
-              (task.students && task.students.length > 0 ? task.students : [{ _id: 'none', username: 'Sin asignar' }]).map(student => (
-                <tr key={`${task._id}-${student._id}`}>
-                  <td>{student.status || 'Pendiente'}</td>
-                  <td>{task.title}</td>
-                  <td>{task.subject?.name}</td>
-                  <td>{student.username}</td>
-                  <td>{new Date(task.dueDate).toLocaleString()}</td>
-                  <td>
-                    <button
-                      className="action-button view-button"
-                      onClick={() => handleViewTask(task, student)}
-                      title="Ver tarea"
-                    >
-                      <i className="fas fa-eye"></i>
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )
-          ) : (
-            <tr>
-              <td colSpan="6" className="no-tasks">
-                No hay tareas disponibles
-              </td>
-            </tr>
-          )}
+          {tasks.map(task => (
+            (submissions[task._id] || []).map(submission => (
+              <tr key={submission._id}>
+                <td>{submission.status || 'Pendiente'}</td>
+                <td>{task.title}</td>
+                <td>{task.subject?.name || 'No especificado'}</td>
+                <td>{submission.student?.username || 'Desconocido'}</td>
+                <td>{new Date(submission.createdAt).toLocaleString()}</td>
+                <td>
+                  <button onClick={() => handleViewSubmission(task, submission)}>Ver</button>
+                </td>
+              </tr>
+            ))
+          ))}
         </tbody>
       </table>
     );
   };
+  //   console.log('Tasks a renderizar:', tasks);
+
+  //   return (
+  //     <table className="tasks-table">
+  //       <thead>
+  //         <tr>
+  //           <th>Estado</th>
+  //           <th>Título de la Tarea</th>
+  //           <th>Materia</th>
+  //           <th>Estudiante</th>
+  //           <th>Fecha de Entrega</th>
+  //           <th>Acciones</th>
+  //         </tr>
+  //       </thead>
+  //       <tbody>
+  //         {tasks && tasks.length > 0 ? (
+  //           tasks.flatMap(task => 
+  //             // Si no hay estudiantes asignados, mostrar al menos una fila
+  //             (task.students && task.students.length > 0 ? task.students : [{ _id: 'none', username: 'Sin asignar' }]).map(student => (
+  //               <tr key={`${task._id}-${student._id}`}>
+  //                 <td>{student.status || 'Pendiente'}</td>
+  //                 <td>{task.title}</td>
+  //                 <td>{task.subject?.name}</td>
+  //                 <td>{student.username}</td>
+  //                 <td>{new Date(task.dueDate).toLocaleString()}</td>
+  //                 <td>
+  //                   <button
+  //                     className="action-button view-button"
+  //                     onClick={() => handleViewTask(task, student)}
+  //                     title="Ver tarea"
+  //                   >
+  //                     <i className="fas fa-eye"></i>
+  //                   </button>
+  //                 </td>
+  //               </tr>
+  //             ))
+  //           )
+  //         ) : (
+  //           <tr>
+  //             <td colSpan="6" className="no-tasks">
+  //               No hay tareas disponibles
+  //             </td>
+  //           </tr>
+  //         )}
+  //       </tbody>
+  //     </table>
+  //   );
+  // };
 
   return (
     <div className="tasks-container">
