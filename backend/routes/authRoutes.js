@@ -12,6 +12,11 @@ router.post('/login', login);
 // Ruta para obtener información del usuario autenticado
 router.get('/user', auth, getUser);
 
+// Ruta para verificar el token
+router.get('/verify', auth, (req, res) => {
+  res.json({ valid: true });
+});
+
 router.post('/logout', auth, async (req, res) => {
   try {
     console.log('Cerrando sesión para usuario:', req.user._id);

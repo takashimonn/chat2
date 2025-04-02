@@ -5,11 +5,34 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:4000',
-  headers: {
-    'Authorization': `Bearer ${localStorage.getItem('token')}`
-  }
+  baseURL: 'http://localhost:4000'
 });
+
+// Interceptor para agregar el token a todas las peticiones
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Interceptor para manejar errores de autenticación
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      localStorage.clear();
+      window.location.href = '/';
+    }
+    return Promise.reject(error);
+  }
+);
 
 const TeacherView = () => {
   const [tasks, setTasks] = useState([]);
@@ -33,12 +56,9 @@ const TeacherView = () => {
 
   const fetchSubmissions = async (taskId) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/submissions/task/${taskId}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
+      const response = await axiosInstance.get(`/api/submissions/task/${taskId}`);
+      const data = response.data;
+      console.log('Submissions actualizados para tarea', taskId, ':', data);
       setSubmissions(prev => ({
         ...prev,
         [taskId]: data
@@ -56,27 +76,24 @@ const TeacherView = () => {
 
   const handleGradeSubmission = async (submissionId, grade, feedback) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/submissions/${submissionId}/grade`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ grade, feedback })
+      const response = await axiosInstance.post(`/api/submissions/${submissionId}/grade`, {
+        grade,
+        feedback
       });
 
-      if (!response.ok) throw new Error('Error al calificar la entrega');
+      if (response.data) {
+        // Actualizar las entregas después de calificar
+        await Promise.all(tasks.map(task => fetchSubmissions(task._id)));
+        await fetchTasks();
 
-      // Actualizar las entregas después de calificar
-      tasks.forEach(task => fetchSubmissions(task._id));
-
-      await Swal.fire({
-        icon: 'success',
-        title: '¡Éxito!',
-        text: 'Calificación guardada correctamente',
-        timer: 1500,
-        showConfirmButton: false
-      });
+        await Swal.fire({
+          icon: 'success',
+          title: '¡Éxito!',
+          text: 'Calificación guardada correctamente',
+          timer: 1500,
+          showConfirmButton: false
+        });
+      }
     } catch (error) {
       console.error('Error:', error);
       Swal.fire({
@@ -207,14 +224,7 @@ const TeacherView = () => {
 
   const fetchTasks = async () => {
     try {
-      const token = localStorage.getItem('token');
-      console.log('Token usado en fetchTasks:', token);
-
-      const response = await axios.get('http://localhost:4000/api/tasks/teacher', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await axiosInstance.get('/api/tasks/teacher');
       console.log('Respuesta de tareas:', response.data);
       setTasks(response.data);
     } catch (error) {
@@ -263,7 +273,8 @@ const TeacherView = () => {
           <div class="detail-row"><strong>Estudiante:</strong> <span>${submission.student?.username || 'No disponible'}</span></div>
           <div class="detail-row"><strong>Estado:</strong> <span>${submission.status || 'Pendiente'}</span></div>
           <div class="detail-row"><strong>Fecha de entrega:</strong> <span>${new Date(submission.createdAt).toLocaleString()}</span></div>
-          <div class="detail-row"><strong>Comentarios:</strong> <span>${submission.comments || 'Sin comentarios'}</span></div>
+          <div class="detail-row"><strong>Calificación:</strong> <span>${submission.grade ? `${submission.grade}/100` : 'Sin calificar'}</span></div>
+          <div class="detail-row"><strong>Retroalimentación:</strong> <span>${submission.feedback || 'Sin retroalimentación'}</span></div>
           ${submission.fileUrl ? `<div class="detail-row"><strong>Archivo:</strong> <span><a href="${submission.fileUrl}" target="_blank">Ver archivo</a></span></div>` : ''}
         </div>
       `,
@@ -278,6 +289,20 @@ const TeacherView = () => {
   };
 
   const handleGradeTask = (task, student) => {
+    // Primero encontramos la entrega correspondiente
+    const submission = submissions[task._id]?.find(sub => 
+      sub.student?._id === student._id
+    );
+
+    if (!submission) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se encontró la entrega para este estudiante'
+      });
+      return;
+    }
+
     Swal.fire({
       title: 'Calificar Tarea',
       html: `
@@ -286,12 +311,31 @@ const TeacherView = () => {
           <p><strong>Estudiante:</strong> ${student.username}</p>
           <div class="form-group">
             <label>Calificación (0-100):</label>
-            <input type="number" id="grade" min="0" max="100" class="swal2-input">
+            <input 
+              type="number" 
+              id="grade" 
+              min="0" 
+              max="100" 
+              class="swal2-input" 
+              value="${submission.grade || ''}"
+              placeholder="Ingrese la calificación"
+            >
           </div>
           <div class="form-group">
             <label>Retroalimentación:</label>
-            <textarea id="feedback" class="swal2-textarea"></textarea>
+            <textarea 
+              id="feedback" 
+              class="swal2-textarea" 
+              placeholder="Ingrese la retroalimentación"
+            >${submission.feedback || ''}</textarea>
           </div>
+          ${submission.grade ? 
+            `<div class="current-grade">
+              <p><strong>Calificación actual:</strong> ${submission.grade}/100</p>
+              <p><strong>Retroalimentación actual:</strong> ${submission.feedback || 'Sin retroalimentación'}</p>
+            </div>` 
+            : ''
+          }
         </div>
       `,
       showCancelButton: true,
@@ -308,38 +352,36 @@ const TeacherView = () => {
       }
     }).then((result) => {
       if (result.isConfirmed) {
-        handleSubmitGrade(task._id, student._id, result.value.grade, result.value.feedback);
+        handleSubmitGrade(submission._id, result.value.grade, result.value.feedback);
       }
     });
   };
 
-  const handleSubmitGrade = async (taskId, studentId, grade, feedback) => {
+  const handleSubmitGrade = async (submissionId, grade, feedback) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(`http://localhost:4000/api/tasks/${taskId}/grade`, {
-        studentId,
+      const response = await axiosInstance.post(`/api/submissions/${submissionId}/grade`, {
         grade,
         feedback
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
       });
 
       if (response.data) {
+        // Actualizamos todas las tareas y sus entregas
+        await fetchTasks();
+        const taskIds = tasks.map(task => task._id);
+        await Promise.all(taskIds.map(taskId => fetchSubmissions(taskId)));
+        
         Swal.fire({
           icon: 'success',
           title: '¡Éxito!',
           text: 'Calificación guardada correctamente'
         });
-        fetchTasks(); // Actualizar la lista de tareas
       }
     } catch (error) {
       console.error('Error al calificar:', error);
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'No se pudo guardar la calificación'
+        text: error.response?.data?.message || 'No se pudo guardar la calificación'
       });
     }
   };
@@ -356,6 +398,7 @@ const TeacherView = () => {
             <th>Materia</th>
             <th>Estudiante</th>
             <th>Fecha de Entrega</th>
+            <th>Calificación</th>
             <th>Acciones</th>
           </tr>
         </thead>
@@ -368,6 +411,7 @@ const TeacherView = () => {
                 <td>{task.subject?.name || 'No especificado'}</td>
                 <td>{submission.student?.username || 'Desconocido'}</td>
                 <td>{new Date(submission.createdAt).toLocaleString()}</td>
+                <td>{submission.grade ? `${submission.grade}/100` : 'Sin calificar'}</td>
                 <td>
                   <button
                     className="action-button view-button"
