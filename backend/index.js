@@ -54,11 +54,36 @@ const tasksDir = path.join(uploadsDir, 'tasks');
 [uploadsDir, submissionsDir, tasksDir].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
+    console.log(`Directorio creado: ${dir}`);
   }
 });
 
-// Configurar ruta estática para archivos
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Middleware para servir archivos estáticos
+app.use('/uploads', (req, res, next) => {
+  console.log('Solicitud de archivo:', req.url);
+  next();
+}, express.static(uploadsDir));
+
+// Middleware para debugging de rutas de archivos
+app.use('/uploads', (req, res, next) => {
+  const filePath = path.join(uploadsDir, req.path);
+  console.log('Ruta de archivo solicitada:', req.path);
+  console.log('Ruta completa:', filePath);
+  
+  // Verificar si el archivo existe
+  fs.access(filePath, fs.constants.F_OK, (err) => {
+    if (err) {
+      console.log('El archivo no existe');
+      res.status(404).json({ 
+        message: 'Archivo no encontrado',
+        path: filePath
+      });
+    } else {
+      console.log('El archivo existe');
+      next();
+    }
+  });
+});
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {

@@ -185,6 +185,8 @@
   background: #1e1e1e;
   border-radius: 8px;
   overflow: hidden;
+  opacity: 0;
+  animation: slideIn 0.5s ease-out forwards;
 }
 
 .tasks-table {
@@ -571,64 +573,580 @@
 }
 
 /* Estilos para el modal de submissions */
-.submission-modal .swal2-html-container {
-  text-align: left !important;
+.submissions-popup {
+  background: white !important;
+  border-radius: 12px !important;
+  padding: 2rem !important;
+  width: 100% !important;
+  max-width: 800px !important;
 }
 
-.submission-popup {
-  padding: 20px;
+.submissions-container {
+  padding: 0;
 }
 
-.submission-content {
-  margin: 0;
-}
-
-.submission-details {
-  text-align: left;
-  padding: 10px;
+.task-summary {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
   background-color: #f8f9fa;
   border-radius: 8px;
 }
 
-.detail-row {
-  padding: 8px 0;
-  border-bottom: 1px solid #eee;
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #333;
+}
+
+.summary-item i {
+  color: #4a90e2;
+  font-size: 1.2rem;
+}
+
+.submissions-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.submission-card {
+  background-color: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: all 0.2s ease;
+}
+
+.submission-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.submission-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.student-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.1rem;
+}
+
+.student-info i {
+  color: #4a90e2;
+  font-size: 1.2rem;
+}
+
+.submission-status {
   display: flex;
   align-items: center;
 }
 
-.detail-row:last-child {
-  border-bottom: none;
+.grade-badge,
+.pending-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.95rem;
+  font-weight: 500;
 }
 
-.detail-row strong {
-  color: #666;
-  width: 140px;
-  display: inline-block;
+.grade-badge {
+  background-color: #4caf50;
+  color: white;
 }
 
-.detail-row span {
+.pending-badge {
+  background-color: #ff9800;
+  color: white;
+}
+
+.submission-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.details-button,
+.grade-button {
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.details-button {
+  background-color: #f8f9fa;
+  color: #333;
+  border: 1px solid #e0e0e0;
+}
+
+.details-button:hover {
+  background-color: #e9ecef;
+}
+
+.grade-button {
+  background-color: #4a90e2;
+  color: white;
+}
+
+.grade-button:hover {
+  background-color: #357abd;
+}
+
+/* Estilos para el modal de detalles de entrega */
+.submission-details-popup {
+  background: #ffffff !important;
+  border-radius: 12px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  width: 100% !important;
+  max-width: 800px !important;
+}
+
+.submission-detail-container {
+  display: flex;
+  min-height: 500px;
+}
+
+.submission-info {
+  flex: 1;
+  padding: 2rem;
+  border-right: 1px solid #e0e0e0;
+  background-color: #f8f9fa;
+}
+
+.student-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+.student-avatar {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  background-color: #4a90e2;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  margin-bottom: 1rem;
+}
+
+.student-avatar i {
+  font-size: 1.8rem;
+  color: white;
+}
+
+.student-name {
   flex: 1;
 }
 
-.detail-row a {
-  color: #4a90e2;
-  text-decoration: none;
-}
-
-.detail-row a:hover {
-  text-decoration: underline;
-}
-
-/* Estilo para el título del modal */
-.swal2-title {
+.student-name h3 {
+  margin: 0;
   color: #333;
-  font-size: 1.5em;
-  margin-bottom: 20px;
+  font-size: 1.4rem;
+  font-weight: 600;
 }
 
-/* Estilo para el botón de cerrar */
+.submission-date {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #666;
+  font-size: 0.9rem;
+  margin-top: 1rem !important;
+  margin: 0 auto;
+  text-align: center;
+  justify-content: center;
+}
+
+.detail-section {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.detail-section h4 {
+  color: #333;
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+}
+
+.detail-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.detail-item .label {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.detail-item .value {
+  color: #333;
+  font-weight: 500;
+}
+
+.status-graded {
+  color: #4caf50;
+}
+
+.status-pending {
+  color: #ff9800;
+}
+
+/* Sección de calificación */
+.grading-section {
+  flex: 1;
+  padding: 2rem;
+  background: white;
+}
+
+.grading-section h4 {
+  color: #333;
+  margin: 0 0 1.5rem 0;
+  font-size: 1.1rem;
+}
+
+.grade-input-group,
+.feedback-input-group {
+  margin-bottom: 1.5rem;
+}
+
+.grade-input-group label,
+.feedback-input-group label {
+  display: block;
+  color: #666;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.grade-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 1rem;
+  color: #333;
+  transition: border-color 0.2s;
+}
+
+.feedback-input {
+  width: 100%;
+  min-height: 120px;
+  padding: 0.75rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  color: #333;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.grade-input:focus,
+.feedback-input:focus {
+  border-color: #4a90e2;
+  outline: none;
+}
+
+.grading-actions {
+  margin-top: 1.5rem;
+}
+
+.grade-update-button {
+  width: 100%;
+  padding: 0.875rem;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.grade-update-button:hover {
+  background-color: #357abd;
+}
+
+.current-grade-info {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.current-grade-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.grade-label {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.grade-value {
+  color: #4caf50;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.current-feedback {
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 6px;
+}
+
+.feedback-label {
+  display: block;
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.feedback-value {
+  color: #333;
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.no-submissions {
+  text-align: center;
+  color: #666;
+  padding: 3rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  font-size: 1.1rem;
+}
+
+.modal-close-button {
+  position: absolute !important;
+  top: 1rem !important;
+  right: 1rem !important;
+  color: #666 !important;
+  transition: color 0.2s !important;
+}
+
+.modal-close-button:hover {
+  color: #333 !important;
+}
+
+.swal2-popup.swal2-modal {
+  padding: 2rem;
+  width: 100%;
+  max-width: 500px;
+}
+
+.swal2-title {
+  font-size: 1.5rem !important;
+  color: #333 !important;
+  margin-bottom: 1.5rem !important;
+  padding-bottom: 1rem !important;
+  border-bottom: 1px solid #eee !important;
+}
+
+.grade-form {
+  width: 100%;
+  margin: 0 auto;
+}
+
+.grade-form .form-group {
+  margin-bottom: 1.5rem;
+}
+
+.grade-form label {
+  display: block;
+  color: #555;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.grade-form input[type="number"] {
+  width: 100% !important;
+  padding: 0.75rem !important;
+  border: 1px solid #ddd !important;
+  border-radius: 6px !important;
+  font-size: 1rem !important;
+  color: #333 !important;
+  margin: 0 !important;
+  height: auto !important;
+}
+
+.grade-form textarea {
+  width: 100% !important;
+  min-height: 120px !important;
+  padding: 0.75rem !important;
+  border: 1px solid #ddd !important;
+  border-radius: 6px !important;
+  font-size: 1rem !important;
+  color: #333 !important;
+  margin: 1rem 0 !important;
+  resize: vertical !important;
+}
+
+.grade-form input:focus,
+.grade-form textarea:focus {
+  border-color: #4a90e2 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1) !important;
+}
+
+.swal2-actions {
+  margin-top: 2rem !important;
+  gap: 1rem !important;
+}
+
+.swal2-confirm,
+.swal2-cancel {
+  padding: 0.75rem 2rem !important;
+  font-size: 1rem !important;
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+  transition: all 0.2s ease !important;
+}
+
 .swal2-confirm {
   background-color: #4a90e2 !important;
-  border-radius: 4px !important;
-} 
+  color: white !important;
+}
+
+.swal2-confirm:hover {
+  background-color: #357abd !important;
+  transform: translateY(-1px) !important;
+}
+
+.swal2-cancel {
+  background-color: #e0e0e0 !important;
+  color: #666 !important;
+}
+
+.swal2-cancel:hover {
+  background-color: #d0d0d0 !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Estilos para el componente de carga */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  width: 100%;
+  background: #1e1e1e;
+  border-radius: 8px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  position: relative;
+}
+
+.loading-spinner:before,
+.loading-spinner:after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+.loading-spinner:before {
+  width: 100%;
+  height: 100%;
+  background-color: rgba(76, 175, 80, 0.2);
+  animation-delay: -0.5s;
+}
+
+.loading-spinner:after {
+  width: 75%;
+  height: 75%;
+  background-color: #4CAF50;
+  top: 12.5%;
+  left: 12.5%;
+  animation-delay: 0s;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+}
+
+/* Animación de barrido para la tabla */
+.tasks-table-container {
+  opacity: 0;
+  animation: slideIn 0.5s ease-out forwards;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animación para las filas de la tabla */
+.tasks-table tbody tr {
+  opacity: 0;
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Aplicar delay a cada fila */
+.tasks-table tbody tr:nth-child(1) { animation-delay: 0.1s; }
+.tasks-table tbody tr:nth-child(2) { animation-delay: 0.2s; }
+.tasks-table tbody tr:nth-child(3) { animation-delay: 0.3s; }
+.tasks-table tbody tr:nth-child(4) { animation-delay: 0.4s; }
+.tasks-table tbody tr:nth-child(5) { animation-delay: 0.5s; }
+.tasks-table tbody tr:nth-child(6) { animation-delay: 0.6s; }
+.tasks-table tbody tr:nth-child(7) { animation-delay: 0.7s; }
+.tasks-table tbody tr:nth-child(8) { animation-delay: 0.8s; }
+.tasks-table tbody tr:nth-child(9) { animation-delay: 0.9s; }
+.tasks-table tbody tr:nth-child(10) { animation-delay: 1s; } 

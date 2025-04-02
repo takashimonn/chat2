@@ -245,12 +245,12 @@ const taskController = {
         .populate('createdBy', 'username')
         .sort({ createdAt: -1 });
 
-      // Para cada tarea, verificar si el estudiante la entregó
+      // Para cada tarea, verificar si el estudiante la entregó y obtener su calificación
       const tasksWithSubmissionStatus = await Promise.all(tasks.map(async (task) => {
         const submission = await Submission.findOne({
           task: task._id,
           student: studentId
-        });
+        }).select('grade feedback submittedAt fileUrl');
         
         const taskObj = task.toObject();
         taskObj.submitted = !!submission;

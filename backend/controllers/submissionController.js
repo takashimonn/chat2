@@ -1,5 +1,7 @@
 const Submission = require('../models/Submission');
 const Task = require('../models/Task');
+const path = require('path');
+const fs = require('fs');
 
 const submissionController = {
   // Crear una nueva entrega
@@ -13,6 +15,8 @@ const submissionController = {
         return res.status(400).json({ message: 'Se requiere un archivo' });
       }
 
+      console.log('Archivo recibido:', file);
+
       // Verificar si ya existe una entrega
       const existingSubmission = await Submission.findOne({
         task: taskId,
@@ -20,12 +24,31 @@ const submissionController = {
       });
 
       if (existingSubmission) {
+        // Si existe una entrega previa, eliminar el archivo anterior si existe
+        if (existingSubmission.fileUrl) {
+          const oldFilePath = path.join(__dirname, '..', existingSubmission.fileUrl.replace(/^\/uploads/, 'uploads'));
+          console.log('Intentando eliminar archivo anterior:', oldFilePath);
+          if (fs.existsSync(oldFilePath)) {
+            fs.unlinkSync(oldFilePath);
+            console.log('Archivo anterior eliminado');
+          }
+        }
         return res.status(400).json({ 
           message: 'Ya has entregado esta tarea' 
         });
       }
 
+      // Construir la URL del archivo
       const fileUrl = `/uploads/submissions/${file.filename}`;
+      console.log('URL del archivo guardada:', fileUrl);
+      console.log('Ruta física del archivo:', file.path);
+
+      // Verificar que el archivo existe
+      if (!fs.existsSync(file.path)) {
+        return res.status(500).json({ 
+          message: 'Error: El archivo no se guardó correctamente' 
+        });
+      }
 
       const submission = await Submission.create({
         task: taskId,
