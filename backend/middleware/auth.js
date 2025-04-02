@@ -1,16 +1,21 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Session = require('../models/Session');
 
 const auth = async (req, res, next) => {
   try {
-    // Agregar log para debugging
-    console.log('JWT_SECRET:', !!process.env.JWT_SECRET);
-    console.log('Headers:', req.headers);
+    // Obtener el header de autorización completo
+    const authHeader = req.header('Authorization');
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ msg: 'Formato de autorización inválido' });
+    }
 
-    const token = req.headers.authorization?.split(' ')[1];
+    // Extraer el token después de 'Bearer '
+    const token = authHeader.split(' ')[1];
     
     if (!token) {
-      return res.status(401).json({ message: 'No token provided' });
+      return res.status(401).json({ msg: 'No hay token, autorización denegada' });
     }
 
     if (!process.env.JWT_SECRET) {
@@ -23,15 +28,25 @@ const auth = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       console.log('Token decodificado:', decoded);
 
-      // Buscar el usuario
+      // Verificar si existe una sesión activa con este token
+      const activeSession = await Session.findOne({
+        token: token,
+        isActive: true
+      });
+
+      if (!activeSession) {
+        return res.status(401).json({ message: 'Sesión no válida o expirada' });
+      }
+
+      // Buscar el usuario usando el ID correcto del token
       const user = await User.findById(decoded.id);
       
       if (!user) {
         return res.status(401).json({ message: 'Usuario no encontrado' });
       }
 
-      // Verificar el rol si es necesario
-      if (req.baseUrl.includes('/api/tasks/teacher') && user.role !== 'maestro') {
+      // Verificar el rol usando el rol del token
+      if (req.baseUrl.includes('/api/tasks/teacher') && decoded.role !== 'maestro') {
         return res.status(403).json({ message: 'Acceso no autorizado' });
       }
 
@@ -48,7 +63,7 @@ const auth = async (req, res, next) => {
       if (error.name === 'TokenExpiredError') {
         return res.status(401).json({ message: 'Token expirado' });
       }
-      res.status(401).json({ message: 'Token inválido' });
+      res.status(401).json({ msg: 'Token no válido' });
     }
   } catch (error) {
     console.error('Auth error:', error);

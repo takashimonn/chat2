@@ -207,10 +207,18 @@ const TeacherView = () => {
 
   const fetchTasks = async () => {
     try {
-      const response = await axiosInstance.get('/api/tasks/teacher');
+      const token = localStorage.getItem('token');
+      console.log('Token usado en fetchTasks:', token);
+
+      const response = await axios.get('http://localhost:4000/api/tasks/teacher', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      console.log('Respuesta de tareas:', response.data);
       setTasks(response.data);
     } catch (error) {
-      console.error('Error al obtener las tareas:', error);
+      console.error('Error completo en fetchTasks:', error.response || error);
       Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -221,10 +229,18 @@ const TeacherView = () => {
 
   const fetchSubjects = async () => {
     try {
-      const response = await axiosInstance.get('/api/subjects');
+      const token = localStorage.getItem('token');
+      console.log('Token usado en fetchSubjects:', token);
+
+      const response = await axios.get('http://localhost:4000/api/subjects', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      console.log('Respuesta de materias:', response.data);
       setSubjects(response.data);
     } catch (error) {
-      console.error('Error al obtener las materias:', error);
+      console.error('Error completo en fetchSubjects:', error.response || error);
       Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -285,6 +301,8 @@ const TeacherView = () => {
   };
 
   const renderTaskTable = () => {
+    console.log('Tasks a renderizar:', tasks);
+
     return (
       <table className="tasks-table">
         <thead>
@@ -298,26 +316,35 @@ const TeacherView = () => {
           </tr>
         </thead>
         <tbody>
-          {tasks.map(task => (
-            task.submissions?.map((submission, index) => (
-              <tr key={`${task._id}-${submission._id}-${index}`}>
-                <td>{submission.status || 'Pendiente'}</td>
-                <td>{task.title}</td>
-                <td>{task.subject?.name}</td>
-                <td>{submission.student?.username || 'No disponible'}</td>
-                <td>{new Date(task.dueDate).toLocaleString()}</td>
-                <td>
-                  <button
-                    className="action-button view-button"
-                    onClick={() => handleViewSubmission(task, submission)}
-                    title="Ver entrega"
-                  >
-                    <i className="fas fa-eye"></i>
-                  </button>
-                </td>
-              </tr>
-            ))
-          ))}
+          {tasks && tasks.length > 0 ? (
+            tasks.flatMap(task => 
+              // Si no hay estudiantes asignados, mostrar al menos una fila
+              (task.students && task.students.length > 0 ? task.students : [{ _id: 'none', username: 'Sin asignar' }]).map(student => (
+                <tr key={`${task._id}-${student._id}`}>
+                  <td>{student.status || 'Pendiente'}</td>
+                  <td>{task.title}</td>
+                  <td>{task.subject?.name}</td>
+                  <td>{student.username}</td>
+                  <td>{new Date(task.dueDate).toLocaleString()}</td>
+                  <td>
+                    <button
+                      className="action-button view-button"
+                      onClick={() => handleViewTask(task, student)}
+                      title="Ver tarea"
+                    >
+                      <i className="fas fa-eye"></i>
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )
+          ) : (
+            <tr>
+              <td colSpan="6" className="no-tasks">
+                No hay tareas disponibles
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     );

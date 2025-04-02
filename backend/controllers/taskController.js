@@ -201,8 +201,9 @@ const taskController = {
         return res.status(403).json({ message: 'Acceso no autorizado' });
       }
 
-      const tasks = await Task.find({ teacher: req.user.id })
+      const tasks = await Task.find({ createdBy: req.user._id })
         .populate('subject', 'name')
+        .populate('createdBy', 'username')
         .lean();
 
       const tasksWithSubmissions = await Promise.all(tasks.map(async (task) => {
