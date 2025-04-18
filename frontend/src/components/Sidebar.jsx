@@ -64,13 +64,7 @@ const Sidebar = () => {
           <i className="fas fa-tasks"></i>
           <span>Tareas</span>
         </Link>
-        <Link 
-          to="/calificaciones" 
-          className={`nav-item ${location.pathname === '/calificaciones' ? 'active' : ''}`}
-        >
-          <i className="fas fa-graduation-cap"></i>
-          <span>Calificaciones</span>
-        </Link>
+
         <Link 
           to="/chat" 
           className={`nav-item ${location.pathname === '/chat' ? 'active' : ''}`}
