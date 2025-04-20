@@ -280,12 +280,7 @@ const MessageForm = memo(({ onSendMessage, replyingTo, onCancelReply }) => {
 });
 
 const Chat = () => {
-  const [subjects, setSubjects] = useState([
-    { id: 1, name: "Matemáticas", teacher: "Dr. García" },
-    { id: 2, name: "Física", teacher: "Dra. Rodríguez" },
-    { id: 3, name: "Química", teacher: "Dr. Martínez" },
-    { id: 4, name: "Programación", teacher: "Ing. López" },
-  ]);
+  const [subjects, setSubjects] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [messages, setMessages] = useState([]);
   const [showSubjects, setShowSubjects] = useState(true);
@@ -308,6 +303,54 @@ const Chat = () => {
       navigate("/", { replace: true });
     }
   }, []);
+
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.error('No hay token');
+          return;
+        }
+
+        // Decodificar el token
+        const decodedToken = JSON.parse(atob(token.split('.')[1]));
+        console.log('Token decodificado:', decodedToken);
+
+        const { role, id } = decodedToken;
+        console.log('Role:', role);
+        console.log('ID:', id);
+
+        // Determinar el endpoint basado en el role
+        const endpoint = role === 'maestro' ? '/subjects/teacher' : '/subjects/student';
+        console.log('Usando endpoint:', endpoint);
+
+        const response = await axiosInstance.get(endpoint);
+        console.log('Respuesta completa:', response);
+
+        if (Array.isArray(response.data)) {
+          console.log('Materias obtenidas:', response.data);
+          setSubjects(response.data);
+        } else {
+          console.error('La respuesta no es un array:', response.data);
+          setSubjects([]);
+        }
+      } catch (error) {
+        console.error('Error al obtener materias:', error);
+        if (error.response) {
+          console.error('Error del servidor:', error.response.data);
+        }
+        setSubjects([]);
+      }
+    };
+
+    fetchSubjects();
+  }, []);
+
+  // Para verificar que subjects se está actualizando
+  useEffect(() => {
+    console.log('Estado actual de subjects:', subjects);
+  }, [subjects]);
 
   // Función para hacer scroll al último mensaje
   const scrollToBottom = (smooth = false) => {
@@ -339,8 +382,19 @@ const Chat = () => {
     }
 
     socket.on('new_message', (newMessage) => {
-      if (newMessage.subject === selectedSubject?.id) {
-        setMessages(prevMessages => [...prevMessages, newMessage]);
+      console.log('Nuevo mensaje recibido:', newMessage);
+      console.log('Materia seleccionada:', selectedSubject);
+      
+      // Verificar que el mensaje corresponde a la materia actual
+      if (selectedSubject && newMessage.subject === selectedSubject.id) {
+        setMessages(prevMessages => {
+          // Verificar si el mensaje ya existe
+          const messageExists = prevMessages.some(msg => msg._id === newMessage._id);
+          if (!messageExists) {
+            return [...prevMessages, newMessage];
+          }
+          return prevMessages;
+        });
       }
     });
 
@@ -412,31 +466,33 @@ const Chat = () => {
     }
   };
 
-  const handleSendMessage = async (content, priority = 'normal') => {
+  const handleSendMessage = async (content, priority = 'normal', replyTo = null) => {
     try {
-      const response = await fetch('http://localhost:4000/api/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          content,
-          subject: selectedSubject.id,
-          priority,
-          replyTo: replyingTo?._id
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al enviar mensaje');
+      if (!selectedSubject) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Error',
+          text: 'Por favor selecciona una materia primero'
+        });
+        return;
       }
 
-      // No necesitas actualizar los mensajes aquí porque Socket.IO lo hará
-      setReplyingTo(null);
-      
+      const messageData = {
+        content,
+        subject: selectedSubject.id,
+        priority,
+        replyTo: replyTo?._id
+      };
+
+      const response = await axiosInstance.post('/messages', messageData);
+
+      if (response.data) {
+        // Actualizar los mensajes inmediatamente después de enviar
+        setMessages(prevMessages => [...prevMessages, response.data]);
+        setReplyingTo(null);
+      }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error al enviar mensaje:', error);
       Swal.fire({
         icon: 'error',
         title: 'Error',

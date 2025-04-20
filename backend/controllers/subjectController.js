@@ -1,4 +1,6 @@
 const Subject = require('../models/Subject');
+const TeacherSubject = require('../models/TeacherSubject');
+const StudentSubject = require('../models/StudentSubject');
 
 const subjectController = {
   // Crear nueva materia
@@ -42,6 +44,72 @@ const subjectController = {
       res.json(subjects);
     } catch (error) {
       console.error('Error al obtener materias:', error);
+      res.status(500).json({ message: 'Error al obtener las materias' });
+    }
+  },
+
+  getTeacherSubjects: async (req, res) => {
+    try {
+      if (!req.user || !req.user._id) {
+        console.error('Usuario no encontrado en request');
+        return res.status(401).json({ message: 'Usuario no autorizado' });
+      }
+
+      console.log('Buscando materias para profesor:', req.user._id);
+      
+      const teacherSubjects = await TeacherSubject.find({ 
+        teacher: req.user._id 
+      })
+      .populate('subject')
+      .lean();
+
+      console.log('Materias encontradas:', teacherSubjects);
+
+      if (!teacherSubjects.length) {
+        console.log('No se encontraron materias para el profesor');
+        return res.status(200).json([]); // Retornar array vacío en lugar de error
+      }
+
+      const subjects = teacherSubjects.map(ts => ({
+        id: ts.subject._id,
+        name: ts.subject.name,
+        teacher: req.user.username
+      }));
+
+      console.log('Enviando subjects:', subjects);
+      res.status(200).json(subjects);
+    } catch (error) {
+      console.error('Error al obtener materias del profesor:', error);
+      res.status(500).json({ message: 'Error al obtener las materias' });
+    }
+  },
+
+  getStudentSubjects: async (req, res) => {
+    try {
+      const studentId = req.user._id;
+      console.log('Buscando materias para estudiante:', studentId);
+      
+      const studentSubjects = await StudentSubject.find({ student: studentId })
+        .populate({
+          path: 'subject',
+          populate: {
+            path: 'teacher',
+            select: 'username'
+          }
+        })
+        .lean();
+
+      console.log('Materias encontradas:', studentSubjects);
+
+      const subjects = studentSubjects.map(ss => ({
+        id: ss.subject._id,
+        name: ss.subject.name,
+        teacher: ss.subject.teacher.username
+      }));
+
+      res.status(200).json(subjects);
+    } catch (error) {
+      console.error('Error al obtener materias del estudiante:', error);
       res.status(500).json({ message: 'Error al obtener las materias' });
     }
   }

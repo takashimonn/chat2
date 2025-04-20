@@ -28,31 +28,44 @@ const messageController = {
   createMessage: async (req, res) => {
     try {
       const { content, subject, priority, replyTo } = req.body;
-      const sender = req.user._id;
-
-      const newMessage = await Message.create({
+      
+      // Agregar logs para depuración
+      console.log('Datos recibidos:', {
         content,
         subject,
-        sender,
         priority,
-        status: 'no_leido',
-        readBy: []
+        replyTo,
+        user: req.user
       });
 
-      const populatedMessage = await Message.findById(newMessage._id)
-        .populate('sender', 'username')
-        .populate('readBy', 'username');
+      const message = new Message({
+        content,
+        sender: req.user._id, // Cambiado de req.user.id a req.user._id
+        subject,
+        priority,
+        replyTo,
+        status: 'no_leido'
+      });
 
-      // Emitir el nuevo mensaje SOLO a la sala de la materia
-      const io = req.app.get('io');
-      if (io) {
-        io.to(`subject_${subject}`).emit('new_message', populatedMessage);
+      const savedMessage = await message.save();
+      
+      // Poblar los datos necesarios para la respuesta
+      const populatedMessage = await Message.findById(savedMessage._id)
+        .populate('sender', 'username')
+        .populate('subject', 'name');
+
+      // Emitir el mensaje a través de Socket.IO
+      if (req.io) {
+        req.io.to(`subject_${subject}`).emit('new_message', populatedMessage);
       }
 
       res.status(201).json(populatedMessage);
     } catch (error) {
-      console.error('Error al crear mensaje:', error);
-      res.status(500).json({ message: 'Error al crear mensaje' });
+      console.error('Error detallado al crear mensaje:', error);
+      res.status(500).json({ 
+        message: 'Error al crear el mensaje',
+        error: error.message 
+      });
     }
   },
 
@@ -118,8 +131,12 @@ const messageController = {
   getMessagesBySubject: async (req, res) => {
     try {
       const { subjectId } = req.params;
+      const mongoose = require('mongoose');
+      
+      // Convertir el string ID a ObjectId
+      const objectId = new mongoose.Types.ObjectId(subjectId);
 
-      const messages = await Message.find({ subject: subjectId })
+      const messages = await Message.find({ subject: objectId })
         .populate('sender', 'username')
         .populate('readBy', 'username')
         .sort({ createdAt: 1 });
