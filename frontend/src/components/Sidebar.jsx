@@ -72,7 +72,15 @@ const Sidebar = () => {
           <i className="fas fa-comments"></i>
           <span>Chat</span>
         </Link>
+        <Link 
+          to="/examenes" 
+          className={`nav-item ${location.pathname === '/examenes' ? 'active' : ''}`}
+        >
+          <i className="fas fa-tasks"></i>
+          <span>Examenes</span>
+          </Link>
       </nav>
+
 
       <div className="sidebar-footer">
         <button onClick={handleLogout} className="boton-logout">

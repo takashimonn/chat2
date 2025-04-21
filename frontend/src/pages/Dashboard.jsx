@@ -58,10 +58,10 @@ const Dashboard = () => {
       color: "#f3e5f5"
     },
     {
-      title: "Próximamente",
+      title: "Examenes",
       description: "Nuevas funcionalidades en desarrollo para mejorar tu experiencia académica.",
       image: "/images/prox.png",
-      path: "#",
+      path: "/examenes",
       color: "#fff3e0"
     }
   ];

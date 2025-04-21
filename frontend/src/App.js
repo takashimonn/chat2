@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import Calificaciones from './pages/Calificaciones';
 import Chat from './pages/Chat';
 import Tasks from './pages/Tasks';
+import Exams from './pages/Exams';
 import { useEffect, useState } from 'react';
 import axiosInstance from './utils/axiosConfig';
 
@@ -82,6 +83,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Tasks />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/examenes" 
+          element={
+            <ProtectedRoute>
+              <Exams />
             </ProtectedRoute>
           } 
         />
