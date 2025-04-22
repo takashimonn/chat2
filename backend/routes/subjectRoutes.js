@@ -14,5 +14,6 @@ router.get('/teacher', authMiddleware, subjectController.getTeacherSubjects);
 
 // Agregar la nueva ruta para estudiantes
 router.get('/student', authMiddleware, subjectController.getStudentSubjects);
+router.get('/:subjectId/students', authMiddleware, subjectController.getSubjectStudents);
 
 module.exports = router; 

@@ -112,6 +112,30 @@ const subjectController = {
       console.error('Error al obtener materias del estudiante:', error);
       res.status(500).json({ message: 'Error al obtener las materias' });
     }
+  },
+
+  getSubjectStudents: async (req, res) => {
+    try {
+      const subjectId = req.params.subjectId;
+      console.log('Buscando estudiantes para la materia:', subjectId);
+
+      const studentSubjects = await StudentSubject.find({ subject: subjectId })
+        .populate('student', 'username')
+        .lean();
+
+      console.log('StudentSubjects encontrados:', studentSubjects);
+
+      const students = studentSubjects.map(ss => ({
+        _id: ss.student._id,
+        username: ss.student.username
+      }));
+
+      console.log('Estudiantes formateados:', students);
+      res.status(200).json(students);
+    } catch (error) {
+      console.error('Error al obtener estudiantes de la materia:', error);
+      res.status(500).json({ message: 'Error al obtener estudiantes' });
+    }
   }
 };
 

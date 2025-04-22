@@ -18,6 +18,8 @@ const authRoutes = require('./routes/authRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const subjectRoutes = require('./routes/subjectRoutes');
 const submissionRoutes = require('./routes/submissionRoutes');
+const examRoutes = require('./routes/examRoutes');
+const questionRoutes = require('./routes/questionRoutes');
 
 // Verificar variables de entorno al inicio
 console.log('Variables de entorno cargadas:', {
@@ -112,6 +114,8 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/subjects', subjectRoutes);
 app.use('/api/submissions', submissionRoutes);
+app.use('/api/exams', examRoutes);
+app.use('/api/questions', questionRoutes);
 
 // Manejo de errores global
 app.use((err, req, res, next) => {
