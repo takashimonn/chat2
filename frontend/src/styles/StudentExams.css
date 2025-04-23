@@ -1,0 +1,43 @@
+.student-exams-container {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.exams-list {
+  display: grid;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.exam-card {
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.exam-card h3 {
+  margin: 0 0 10px 0;
+  color: #333;
+}
+
+.start-exam-button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.start-exam-button:hover {
+  background-color: #45a049;
+}
+
+.exam-score {
+  font-weight: bold;
+  color: #4CAF50;
+  margin-top: 10px;
+}

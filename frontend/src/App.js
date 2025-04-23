@@ -7,12 +7,15 @@ import Calificaciones from './pages/Calificaciones';
 import Chat from './pages/Chat';
 import Tasks from './pages/Tasks';
 import Exams from './pages/Exams';
+import StudentExams from './pages/StudentExams';
 import { useEffect, useState } from 'react';
 import axiosInstance from './utils/axiosConfig';
 
 // Componente para proteger rutas
 const ProtectedRoute = ({ children, withSidebar = true }) => {
   const token = localStorage.getItem('token');
+  const role = localStorage.getItem('role');
+
   if (!token) { 
     return <Navigate to="/" replace />;
   }
@@ -90,7 +93,7 @@ function App() {
           path="/examenes" 
           element={
             <ProtectedRoute>
-              <Exams />
+              {localStorage.getItem('userRole') === 'maestro' ? <Exams /> : <StudentExams />}
             </ProtectedRoute>
           } 
         />

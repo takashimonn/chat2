@@ -41,4 +41,21 @@ exports.assignQuestions = async (req, res) => {
     console.error('Error al asignar preguntas:', error);
     res.status(500).json({ message: 'Error al asignar preguntas al examen' });
   }
+};
+
+exports.getStudentExams = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    console.log('Buscando exámenes para estudiante:', studentId);
+
+    const exams = await Exam.find({ student: studentId })
+      .populate('subject')
+      .sort({ createdAt: -1 });
+
+    console.log('Exámenes encontrados:', exams);
+    res.json(exams);
+  } catch (error) {
+    console.error('Error al obtener exámenes:', error);
+    res.status(500).json({ message: 'Error al obtener exámenes' });
+  }
 }; 
