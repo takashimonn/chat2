@@ -3,9 +3,14 @@ const Question = require('../models/Question');
 const getQuestionsBySubject = async (req, res) => {
   try {
     const { subjectId } = req.params;
+    console.log('Buscando preguntas para la materia:', subjectId);
+    
     const questions = await Question.find({ subject: subjectId });
+    console.log('Preguntas encontradas:', questions);
+    
     res.status(200).json(questions);
   } catch (error) {
+    console.error('Error al obtener preguntas:', error);
     res.status(500).json({ message: 'Error al obtener preguntas' });
   }
 };

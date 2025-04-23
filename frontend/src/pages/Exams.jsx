@@ -44,10 +44,11 @@ const Exams = () => {
   // Añadir useEffect para cargar preguntas cuando se crea un examen
   useEffect(() => {
     const loadQuestions = async () => {
-      if (currentExam && selectedSubject) {
+      if (selectedSubject) {
         try {
           const response = await axiosInstance.get(`/questions/subject/${selectedSubject}`);
-          setAvailableQuestions(response.data);
+          console.log('Preguntas disponibles:', response.data);
+          setQuestions(response.data);
         } catch (error) {
           console.error('Error al cargar preguntas:', error);
         }
@@ -55,7 +56,7 @@ const Exams = () => {
     };
 
     loadQuestions();
-  }, [currentExam, selectedSubject]);
+  }, [selectedSubject]);
 
   const handleCreateExam = async () => {
     try {
@@ -104,36 +105,33 @@ const Exams = () => {
     if (!currentExam) return null;
 
     return (
-      <div>
+      <div className="section">
         <h2>Seleccionar Preguntas</h2>
-        {availableQuestions.length === 0 ? (
-          <p>No hay preguntas disponibles para esta materia</p>
-        ) : (
-          <div>
-            {availableQuestions.map((question) => (
-              <div key={question._id}>
-                <input
-                  type="checkbox"
-                  id={question._id}
-                  checked={selectedQuestions.includes(question._id)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedQuestions([...selectedQuestions, question._id]);
-                    } else {
-                      setSelectedQuestions(selectedQuestions.filter(id => id !== question._id));
-                    }
-                  }}
-                />
-                <label htmlFor={question._id}>{question.text}</label>
-              </div>
-            ))}
-            <button 
-              onClick={handleAssignQuestions}
-              disabled={selectedQuestions.length === 0}
-            >
-              Asignar Preguntas
-            </button>
-          </div>
+        <div className="questions-list">
+          {questions.map((questionItem) => (
+            <div key={questionItem._id} className="question-item">
+              <input
+                type="checkbox"
+                id={questionItem._id}
+                checked={selectedQuestions.includes(questionItem._id)}
+                onChange={() => {
+                  const newSelected = selectedQuestions.includes(questionItem._id)
+                    ? selectedQuestions.filter(id => id !== questionItem._id)
+                    : [...selectedQuestions, questionItem._id];
+                  setSelectedQuestions(newSelected);
+                }}
+              />
+              <label htmlFor={questionItem._id}>{questionItem.question}</label>
+            </div>
+          ))}
+        </div>
+        {questions.length > 0 && (
+          <button 
+            onClick={handleAssignQuestions}
+            className="assign-button"
+          >
+            Asignar Preguntas
+          </button>
         )}
       </div>
     );
