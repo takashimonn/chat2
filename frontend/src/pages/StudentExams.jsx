@@ -105,8 +105,8 @@ const StudentExams = () => {
           {exams.map((exam) => (
             <div key={exam._id} className="exam-card">
               <h3>Examen de {exam.subject?.name}</h3>
-              <p>Estado: {exam.submitted ? 'Completado' : 'Pendiente'}</p>
-              {!exam.submitted && (
+              <p>Estado: {exam.status === 'completed' ? 'Completado' : 'Pendiente'}</p>
+              {exam.status !== 'completed' && (
                 <button 
                   className="start-exam-button"
                   onClick={() => handleStartExam(exam._id)}
@@ -114,8 +114,8 @@ const StudentExams = () => {
                   Comenzar Examen
                 </button>
               )}
-              {exam.submitted && exam.score && (
-                <p className="exam-score">Calificación: {exam.score}</p>
+              {exam.status === 'completed' && (
+                <p className="exam-score">Calificación: {exam.calification}</p>
               )}
             </div>
           ))}
