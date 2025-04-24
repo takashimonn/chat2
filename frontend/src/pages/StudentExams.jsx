@@ -55,15 +55,39 @@ const StudentExams = () => {
 
   const handleSubmitExam = async () => {
     try {
-      await axiosInstance.post(`/exams/${currentExam}/submit`, { answers });
+      // Transformar las respuestas al formato que espera el backend
+      const formattedAnswers = Object.entries(answers).map(([questionId, answer]) => ({
+        questionId,
+        answer
+      }));
+
+      const response = await axiosInstance.post(
+        `/exams/${currentExam}/submit`, 
+        { answers: formattedAnswers }
+      );
+
+      // Mostrar resultados al alumno
+      const { results } = response.data;
+      alert(`
+        Examen completado!
+        Respuestas correctas: ${results.correctAnswers}
+        Respuestas incorrectas: ${results.incorrectAnswers}
+        Calificación: ${results.calification}
+      `);
+
+      // Cerrar modal y actualizar lista de exámenes
       setShowModal(false);
       setCurrentExam(null);
       setAnswers({});
+      
+      // Recargar la lista de exámenes
       const studentId = localStorage.getItem('userId');
-      const response = await axiosInstance.get(`/exams/student/${studentId}`);
-      setExams(response.data);
+      const examsResponse = await axiosInstance.get(`/exams/student/${studentId}`);
+      setExams(examsResponse.data);
+
     } catch (error) {
       console.error('Error al enviar examen:', error);
+      alert('Error al enviar el examen. Por favor intenta de nuevo.');
     }
   };
 

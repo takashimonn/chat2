@@ -13,4 +13,6 @@ router.get('/:examId/questions', authMiddleware, examController.getExamQuestions
 
 router.get('/teacher/all', authMiddleware, examController.getTeacherExams);
 
+router.post('/:examId/submit', authMiddleware, examController.submitExam);
+
 module.exports = router; 
