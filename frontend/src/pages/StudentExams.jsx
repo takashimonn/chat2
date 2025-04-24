@@ -35,7 +35,9 @@ const StudentExams = () => {
       console.log('Iniciando examen:', examId);
       const response = await axiosInstance.get(`/exams/${examId}/questions`);
       console.log('Preguntas obtenidas:', response.data);
-      setExamQuestions(response.data);
+      
+      const questions = response.data.map(eq => eq.question);
+      setExamQuestions(questions);
       setCurrentExam(examId);
       setShowModal(true);
     } catch (error) {

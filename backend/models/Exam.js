@@ -22,6 +22,11 @@ const examSchema = new mongoose.Schema({
   calification: {
     type: Number,
     required: false
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'completed'],
+    default: 'pending'
   }
 });
 
