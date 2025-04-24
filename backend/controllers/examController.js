@@ -79,7 +79,10 @@ exports.getExamQuestions = async (req, res) => {
 exports.getTeacherExams = async (req, res) => {
   try {
     const exams = await Exam.find()
-      .populate('student')
+      .populate({
+        path: 'student',
+        select: 'name email'
+      })
       .populate('subject')
       .sort({ createdAt: -1 });
 

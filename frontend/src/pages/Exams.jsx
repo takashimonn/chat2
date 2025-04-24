@@ -10,6 +10,7 @@ const Exams = () => {
   const [selectedQuestions, setSelectedQuestions] = useState([]);
   const [currentExam, setCurrentExam] = useState(null);
   const [availableQuestions, setAvailableQuestions] = useState([]);
+  const [submittedExams, setSubmittedExams] = useState([]);
 
   // Obtener las materias del profesor
   useEffect(() => {
@@ -57,6 +58,23 @@ const Exams = () => {
 
     loadQuestions();
   }, [selectedSubject]);
+
+  useEffect(() => {
+    const fetchSubmittedExams = async () => {
+      try {
+        const response = await axiosInstance.get('/exams/teacher/all');
+        // Agregamos console.log para ver los datos
+        console.log('Datos de exámenes recibidos:', response.data);
+        const completedExams = response.data.filter(exam => exam.status === 'completed');
+        console.log('Exámenes completados:', completedExams);
+        setSubmittedExams(completedExams);
+      } catch (error) {
+        console.error('Error al obtener exámenes:', error);
+      }
+    };
+
+    fetchSubmittedExams();
+  }, []);
 
   const handleCreateExam = async () => {
     try {
@@ -137,8 +155,42 @@ const Exams = () => {
     );
   };
 
+  const TeacherExamList = () => {
+    return (
+      <div className="submitted-exams-section">
+        <h2>Exámenes Entregados</h2>
+        {submittedExams.length === 0 ? (
+          <p>No hay exámenes entregados aún</p>
+        ) : (
+          <table className="exams-table">
+            <thead>
+              <tr>
+                <th>Alumno</th>
+                <th>Materia</th>
+                <th>Correctas</th>
+                <th>Incorrectas</th>
+                <th>Calificación</th>
+              </tr>
+            </thead>
+            <tbody>
+              {submittedExams.map((exam) => (
+                <tr key={exam._id}>
+                  <td>{exam.student?.email?.split('@')[0] || 'No disponible'}</td>
+                  <td>{exam.subject?.name || 'No disponible'}</td>
+                  <td>{exam.correctAnswers}</td>
+                  <td>{exam.incorrectAnswers}</td>
+                  <td>{exam.calification}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    );
+  };
+
   return (
-    <div>
+    <div className="exams-container">
       <h1>Asignar Examen</h1>
       
       {/* Selector de materia */}
@@ -182,8 +234,52 @@ const Exams = () => {
       )}
 
       {renderQuestionSelection()}
+
+      {/* Agregamos la tabla de exámenes entregados */}
+      <TeacherExamList />
     </div>
   );
 };
+
+// Agregamos los estilos necesarios
+const styles = `
+.submitted-exams-section {
+  margin-top: 2rem;
+  padding: 1rem;
+}
+
+.exams-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.exams-table th,
+.exams-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.exams-table th {
+  background-color: #f4f4f4;
+  font-weight: 600;
+}
+
+.exams-table tr:hover {
+  background-color: #f5f5f5;
+}
+
+.exams-table td {
+  color: #333;
+}
+`;
+
+// Agregamos los estilos al documento
+const styleSheet = document.createElement("style");
+styleSheet.innerText = styles;
+document.head.appendChild(styleSheet);
 
 export default Exams; 
