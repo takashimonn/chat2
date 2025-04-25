@@ -659,8 +659,21 @@ const Exams = () => {
         confirmButtonColor: '#3085d6'
       });
 
+      // Limpiar el formulario y la lista
       setQuestionsList([]);
       setShowQuestionModal(false);
+
+      // Actualizar la lista de preguntas si hay una materia seleccionada
+      if (selectedSubject) {
+        try {
+          const questionsResponse = await axiosInstance.get(`/questions/subject/${selectedSubject}`);
+          console.log('Preguntas actualizadas:', questionsResponse.data);
+          setQuestions(questionsResponse.data);
+        } catch (error) {
+          console.error('Error al actualizar preguntas:', error);
+        }
+      }
+
     } catch (error) {
       console.error('Error completo:', error);
       console.error('Datos del error:', error.response?.data);
