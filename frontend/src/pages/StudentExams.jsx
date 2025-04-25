@@ -41,6 +41,46 @@ const swalStyles = `
   }
 `;
 
+const examStyles = `
+  .exam-time-limit {
+    color: #666;
+    font-size: 0.9rem;
+    margin: 5px 0;
+    padding: 5px 10px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    display: inline-block;
+  }
+
+  .timer {
+    background-color: #f8f9fa;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-weight: bold;
+    color: #212529;
+    margin: 0 10px;
+  }
+
+  .timer.warning {
+    color: #dc3545;
+    animation: pulse 1s infinite;
+  }
+
+  @keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+  }
+
+  .exam-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px;
+    border-bottom: 1px solid #ddd;
+  }
+`;
+
 const StudentExams = () => {
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,11 +88,13 @@ const StudentExams = () => {
   const [currentExam, setCurrentExam] = useState(null);
   const [examQuestions, setExamQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
+  const [timeRemaining, setTimeRemaining] = useState(null);
+  const [timerInterval, setTimerInterval] = useState(null);
 
   // Agregamos el useEffect para los estilos dentro del componente
   useEffect(() => {
     const styleSheet = document.createElement("style");
-    styleSheet.innerText = swalStyles;
+    styleSheet.innerText = swalStyles + examStyles;
     document.head.appendChild(styleSheet);
 
     return () => {
@@ -80,29 +122,69 @@ const StudentExams = () => {
     fetchExams();
   }, []);
 
+  // Modificar la función formatTime para incluir minutos y segundos
+  const formatTime = (minutes) => {
+    const hrs = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+  };
+
   const handleStartExam = async (examId) => {
     try {
+      console.log('Iniciando examen:', examId);
       const response = await axiosInstance.get(`/exams/${examId}/questions`);
-      const questions = response.data.map(eq => eq.question);
-      setExamQuestions(questions);
+      console.log('Respuesta completa:', response.data);
+
+      // Extraer los datos de la respuesta
+      const { questions, timeLimit } = response.data;
+      
+      // Asegurarnos de que questions es un array antes de hacer map
+      const examQuestions = Array.isArray(questions) ? 
+        questions.map(q => q.question) : [];
+
+      console.log('Preguntas procesadas:', examQuestions);
+      console.log('Tiempo límite:', timeLimit);
+
+      setExamQuestions(examQuestions);
       setCurrentExam(examId);
       setShowModal(true);
 
-      // Toast de inicio de examen
+      // Configurar el temporizador si hay límite de tiempo
+      if (timeLimit) {
+        setTimeRemaining(timeLimit);
+        const interval = setInterval(() => {
+          setTimeRemaining(prev => {
+            if (prev <= 1) {
+              clearInterval(interval);
+              handleSubmitExam(true);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 60000);
+        setTimerInterval(interval);
+      }
+
+      // Mostrar mensaje de inicio
       await Swal.fire({
         toast: true,
         position: 'top-end',
         icon: 'info',
         title: '¡Examen iniciado!',
-        text: 'Buena suerte',
+        html: timeLimit ? 
+          `Tienes ${timeLimit} minutos para completar el examen. ¡Buena suerte!` :
+          'Este examen no tiene límite de tiempo. ¡Buena suerte!',
         showConfirmButton: false,
         timer: 3000,
         timerProgressBar: true,
         background: '#3498db',
         color: '#fff'
       });
+
     } catch (error) {
-      console.error('Error al cargar preguntas:', error);
+      console.error('Error detallado:', error);
+      console.error('Respuesta del servidor:', error.response?.data);
+      
       await Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -119,7 +201,21 @@ const StudentExams = () => {
     }));
   };
 
-  const handleSubmitExam = async () => {
+  const handleSubmitExam = async (isTimeUp = false) => {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      setTimerInterval(null);
+    }
+
+    if (isTimeUp) {
+      await Swal.fire({
+        title: '¡Tiempo Agotado!',
+        text: 'El tiempo límite para el examen ha terminado',
+        icon: 'warning',
+        confirmButtonColor: '#3085d6'
+      });
+    }
+
     try {
       // Confirmación antes de enviar
       const confirmResult = await Swal.fire({
@@ -200,6 +296,15 @@ const StudentExams = () => {
     }
   };
 
+  // Agregar este useEffect para limpiar el timer
+  useEffect(() => {
+    return () => {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+      }
+    };
+  }, [timerInterval]);
+
   // Modificar el botón de cerrar en el modal
   const handleCloseExam = async () => {
     const result = await Swal.fire({
@@ -235,6 +340,11 @@ const StudentExams = () => {
             <div key={exam._id} className="exam-card">
               <h3>Examen de {exam.subject?.name}</h3>
               <p>Estado: {exam.status === 'completed' ? 'Completado' : 'Pendiente'}</p>
+              {exam.timeLimit && exam.status !== 'completed' && (
+                <p className="exam-time-limit">
+                  ⏱️ Tiempo límite: {exam.timeLimit} minutos
+                </p>
+              )}
               {exam.status !== 'completed' && (
                 <button 
                   className="start-exam-button"
@@ -256,6 +366,11 @@ const StudentExams = () => {
           <div className="exam-modal">
             <div className="exam-modal-header">
               <h2>Examen en Curso</h2>
+              {timeRemaining !== null && (
+                <div className={`timer ${timeRemaining <= 5 ? 'warning' : ''}`}>
+                  ⏱️ Tiempo restante: {formatTime(timeRemaining)}
+                </div>
+              )}
               <button 
                 className="close-button"
                 onClick={handleCloseExam}
@@ -265,12 +380,12 @@ const StudentExams = () => {
             </div>
             <div className="exam-modal-content">
               {examQuestions.map((question, index) => (
-                <div key={question._id} className="question-container">
+                <div key={index} className="question-container">
                   <p className="question-number">Pregunta {index + 1}</p>
-                  <p className="question-text">{question.question}</p>
+                  <p className="question-text">{question}</p>
                   <textarea
-                    value={answers[question._id] || ''}
-                    onChange={(e) => handleAnswerChange(question._id, e.target.value)}
+                    value={answers[index] || ''}
+                    onChange={(e) => handleAnswerChange(index, e.target.value)}
                     placeholder="Escribe tu respuesta aquí..."
                     className="answer-input"
                   />
@@ -280,8 +395,8 @@ const StudentExams = () => {
             <div className="exam-modal-footer">
               <button 
                 className="submit-exam-button"
-                onClick={handleSubmitExam}
-                disabled={Object.keys(answers).length !== examQuestions.length}
+                onClick={() => handleSubmitExam()}
+                disabled={examQuestions.length !== Object.keys(answers).length}
               >
                 Entregar Examen
               </button>

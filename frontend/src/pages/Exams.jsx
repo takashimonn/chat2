@@ -235,6 +235,72 @@ const swalStyles = `
 }
 `;
 
+const newTimeStyles = `
+  .time-limit-section {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+  }
+
+  .time-limit-controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-top: 10px;
+  }
+
+  .time-limit-switch {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+  }
+
+  .time-input {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .time-input input {
+    width: 80px;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+
+  .switch-slider {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+    background-color: #ccc;
+    border-radius: 12px;
+    transition: .4s;
+  }
+
+  .switch-slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    border-radius: 50%;
+    transition: .4s;
+  }
+
+  input:checked + .switch-slider {
+    background-color: #4CAF50;
+  }
+
+  input:checked + .switch-slider:before {
+    transform: translateX(26px);
+  }
+`;
+
 const Exams = () => {
   const [subjects, setSubjects] = useState([]);
   const [students, setStudents] = useState([]);
@@ -254,12 +320,16 @@ const Exams = () => {
     score: 10
   });
   const [questionsList, setQuestionsList] = useState([]);
+  const [examConfig, setExamConfig] = useState({
+    timeLimit: 30,
+    hasTimeLimit: false
+  });
 
   // Agregamos un useEffect para manejar los estilos
   useEffect(() => {
     // Creamos el elemento style
     const styleSheet = document.createElement("style");
-    styleSheet.innerText = styles + newStyles + swalStyles;
+    styleSheet.innerText = styles + newStyles + swalStyles + newTimeStyles;
     document.head.appendChild(styleSheet);
 
     // Limpieza cuando el componente se desmonte
@@ -362,7 +432,8 @@ const Exams = () => {
 
       const response = await axiosInstance.post('/exams/create', {
         studentId: selectedStudent,
-        subjectId: selectedSubject
+        subjectId: selectedSubject,
+        timeLimit: examConfig.hasTimeLimit ? examConfig.timeLimit : null
       });
 
       // Obtenemos los datos del estudiante y la materia para mostrarlos
@@ -380,6 +451,10 @@ const Exams = () => {
               <p><b>📚 Materia:</b> ${subject?.name || 'No disponible'}</p>
               <p><b>👤 Estudiante:</b> ${student?.username || 'No disponible'}</p>
               <p><b>🆔 ID del Examen:</b> ${response.data._id}</p>
+              ${examConfig.hasTimeLimit ? 
+                `<p><b>⏱️ Tiempo límite:</b> ${examConfig.timeLimit} minutos</p>` 
+                : '<p><b>⏱️ Tiempo:</b> Sin límite</p>'
+              }
             </div>
             <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px;">
               <p style="color: #666; margin: 0;">
@@ -402,6 +477,7 @@ const Exams = () => {
           // Si el usuario cancela, limpiamos la selección
           setSelectedStudent('');
           setSelectedSubject('');
+          setExamConfig({ timeLimit: 30, hasTimeLimit: false });
         }
       });
 
@@ -753,6 +829,40 @@ const Exams = () => {
               </option>
             ))}
           </select>
+          {selectedStudent && (
+            <div className="time-limit-section">
+              <h2>Configuración de Tiempo</h2>
+              <div className="time-limit-controls">
+                <label className="time-limit-switch">
+                  <input
+                    type="checkbox"
+                    checked={examConfig.hasTimeLimit}
+                    onChange={(e) => setExamConfig(prev => ({
+                      ...prev,
+                      hasTimeLimit: e.target.checked
+                    }))}
+                  />
+                  <span className="switch-slider"></span>
+                  Establecer límite de tiempo
+                </label>
+                
+                {examConfig.hasTimeLimit && (
+                  <div className="time-input">
+                    <input
+                      type="number"
+                      min="1"
+                      value={examConfig.timeLimit}
+                      onChange={(e) => setExamConfig(prev => ({
+                        ...prev,
+                        timeLimit: Math.max(1, parseInt(e.target.value) || 1)
+                      }))}
+                    />
+                    <span>minutos</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           {selectedStudent && (
             <button onClick={handleCreateExam}>Crear Examen</button>
           )}

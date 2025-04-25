@@ -27,7 +27,13 @@ const examSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'completed'],
     default: 'pending'
+  },
+  timeLimit: {
+    type: Number,
+    default: null
   }
+}, {
+  timestamps: true
 });
 
 const Exam = mongoose.model('Exam', examSchema);

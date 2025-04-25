@@ -3,19 +3,26 @@ const ExamQuestion = require('../models/ExamQuestion');
 
 exports.createExam = async (req, res) => {
   try {
-    const { studentId, subjectId } = req.body;
-    console.log('Datos recibidos:', { studentId, subjectId });
+    const { studentId, subjectId, timeLimit } = req.body;
+    console.log('Datos recibidos:', { studentId, subjectId, timeLimit });
 
-    const newExam = await Exam.create({
+    if (!studentId || !subjectId) {
+      return res.status(400).json({ message: 'Se requiere ID de estudiante y materia' });
+    }
+
+    const newExam = new Exam({
       student: studentId,
       subject: subjectId,
+      timeLimit: timeLimit || null,
       correctAnswers: null,
       incorrectAnswers: null,
-      score: null
+      score: null,
+      status: 'pending'
     });
 
-    console.log('Examen creado:', newExam);
-    res.status(201).json(newExam);
+    const savedExam = await newExam.save();
+    console.log('Examen creado:', savedExam);
+    res.status(201).json(savedExam);
   } catch (error) {
     console.error('Error al crear examen:', error);
     res.status(500).json({ message: 'Error al crear el examen' });
@@ -65,14 +72,35 @@ exports.getExamQuestions = async (req, res) => {
     const { examId } = req.params;
     console.log('Buscando preguntas para el examen:', examId);
 
+    // Buscar las preguntas del examen en ExamQuestion
     const examQuestions = await ExamQuestion.find({ exam: examId })
       .populate('question');
 
+    if (!examQuestions) {
+      console.log('No se encontraron preguntas para el examen');
+      return res.status(404).json({ message: 'No se encontraron preguntas para este examen' });
+    }
+
+    // Obtener el examen para el timeLimit
+    const exam = await Exam.findById(examId);
+    
     console.log('Preguntas encontradas:', examQuestions);
-    res.json(examQuestions);
+
+    // Estructurar la respuesta como estaba originalmente
+    const response = {
+      questions: examQuestions.map(eq => eq.question),
+      timeLimit: exam.timeLimit
+    };
+
+    console.log('Respuesta a enviar:', response);
+    res.status(200).json(response);
+
   } catch (error) {
-    console.error('Error al obtener preguntas del examen:', error);
-    res.status(500).json({ message: 'Error al obtener preguntas del examen' });
+    console.error('Error completo al obtener preguntas:', error);
+    res.status(500).json({ 
+      message: 'Error al obtener preguntas del examen',
+      error: error.message 
+    });
   }
 };
 
@@ -157,5 +185,27 @@ exports.submitExam = async (req, res) => {
   } catch (error) {
     console.error('Error al enviar examen:', error);
     res.status(500).json({ message: 'Error al procesar el examen' });
+  }
+};
+
+exports.getExamById = async (req, res) => {
+  try {
+    const { examId } = req.params;
+    const exam = await Exam.findById(examId)
+      .populate('student')
+      .populate('subject')
+      .populate('questions.question');
+
+    if (!exam) {
+      return res.status(404).json({ message: 'Examen no encontrado' });
+    }
+
+    res.status(200).json({
+      ...exam.toObject(),
+      timeLimit: exam.timeLimit
+    });
+  } catch (error) {
+    console.error('Error al obtener examen:', error);
+    res.status(500).json({ message: 'Error al obtener el examen' });
   }
 }; 
