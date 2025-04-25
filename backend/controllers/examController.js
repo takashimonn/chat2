@@ -224,17 +224,30 @@ exports.getExamById = async (req, res) => {
 exports.getExamAnswers = async (req, res) => {
   try {
     const { examId } = req.params;
-    const examQuestions = await ExamQuestion.find({ exam: examId })
-      .populate('question');
+    
+    const examWithAnswers = await ExamQuestion.find({ exam: examId })
+      .populate('question')
+      .lean();
 
-    if (!examQuestions) {
-      return res.status(404).json({ message: 'No se encontraron respuestas' });
+    if (!examWithAnswers) {
+      return res.status(404).json({ message: 'No se encontraron respuestas para este examen' });
     }
 
-    res.json({ answers: examQuestions });
+    // Asegurarnos de que los datos están en el formato correcto
+    const answers = examWithAnswers.map(item => ({
+      _id: item._id,
+      question: item.question.question,
+      studentAnswer: item.answer || 'Sin respuesta',
+      correctAnswer: item.question.correctAnswer,
+      isCorrect: item.isCorrect || false
+    }));
+
+    console.log('Respuestas formateadas:', answers);
+    res.json({ answers });
+
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ message: 'Error al obtener respuestas' });
+    console.error('Error al obtener respuestas:', error);
+    res.status(500).json({ message: 'Error al obtener respuestas del examen' });
   }
 };
 
@@ -245,25 +258,42 @@ exports.updateAnswer = async (req, res) => {
 
     console.log('Actualizando respuesta:', { examId, answerId, isCorrect });
 
-    // Actualizar el estado de la respuesta
+    // Actualizar la respuesta específica
     await ExamQuestion.findByIdAndUpdate(
       answerId,
-      { isCorrect: isCorrect },
+      { isCorrect },
       { new: true }
     );
 
-    // Obtener todas las respuestas del examen
-    const allAnswers = await ExamQuestion.find({ exam: examId });
+    // Obtener todas las respuestas del examen con sus preguntas y puntajes
+    const allAnswers = await ExamQuestion.find({ exam: examId })
+      .populate('question', 'score')
+      .lean();
     
-    // Contar respuestas correctas e incorrectas
-    const correctAnswers = allAnswers.filter(answer => answer.isCorrect === true).length;
-    const incorrectAnswers = allAnswers.length - correctAnswers;
-    
-    // Calcular la nueva calificación
-    const calification = Math.round((correctAnswers / allAnswers.length) * 100);
+    // Calcular puntajes
+    let totalScore = 0;
+    let obtainedScore = 0;
+    let correctAnswers = 0;
+    let incorrectAnswers = 0;
 
-    console.log('Nuevas estadísticas:', {
-      total: allAnswers.length,
+    allAnswers.forEach(answer => {
+      const questionScore = answer.question.score || 10; // valor por defecto de 10 si no hay score
+      totalScore += questionScore;
+
+      if (answer.isCorrect) {
+        obtainedScore += questionScore;
+        correctAnswers++;
+      } else {
+        incorrectAnswers++;
+      }
+    });
+
+    // Calcular la calificación como porcentaje del puntaje obtenido
+    const calification = Math.round((obtainedScore / totalScore) * 100);
+
+    console.log('Cálculo de calificación:', {
+      totalScore,
+      obtainedScore,
       correctAnswers,
       incorrectAnswers,
       calification
@@ -275,24 +305,25 @@ exports.updateAnswer = async (req, res) => {
       {
         correctAnswers,
         incorrectAnswers,
-        calification
+        calification,
+        status: 'completed'
       },
       { new: true }
     );
-
-    console.log('Examen actualizado:', updatedExam);
 
     res.json({
       message: 'Respuesta actualizada correctamente',
       stats: {
         correctAnswers,
         incorrectAnswers,
-        calification
+        calification,
+        totalScore,
+        obtainedScore
       }
     });
 
   } catch (error) {
-    console.error('Error completo:', error);
+    console.error('Error al actualizar:', error);
     res.status(500).json({ 
       message: 'Error al actualizar respuesta',
       error: error.message 

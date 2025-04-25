@@ -163,7 +163,58 @@ const styles = `
 `;
 
 const newStyles = `
-  // ... nuevos estilos ...
+.students-selection {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.student-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+}
+
+.student-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.student-checkbox label {
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.student-checkbox:hover {
+  background-color: #e9ecef;
+}
+
+.next-step-button {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s;
+}
+
+.next-step-button:hover {
+  background-color: #45a049;
+}
 `;
 
 const swalStyles = `
@@ -306,7 +357,7 @@ const Exams = () => {
   const [students, setStudents] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState('');
-  const [selectedStudent, setSelectedStudent] = useState('');
+  const [selectedStudents, setSelectedStudents] = useState([]);
   const [selectedQuestions, setSelectedQuestions] = useState([]);
   const [currentExam, setCurrentExam] = useState(null);
   const [availableQuestions, setAvailableQuestions] = useState([]);
@@ -393,8 +444,7 @@ const Exams = () => {
     const fetchSubmittedExams = async () => {
       try {
         const response = await axiosInstance.get('/exams/teacher/all');
-        // Agregamos console.log para ver los datos
-        console.log('Datos de exámenes recibidos:', response.data);
+        // Filtramos solo los exámenes que han sido completados
         const completedExams = response.data.filter(exam => exam.status === 'completed');
         console.log('Exámenes completados:', completedExams);
         setSubmittedExams(completedExams);
@@ -434,13 +484,13 @@ const Exams = () => {
       });
 
       const response = await axiosInstance.post('/exams/create', {
-        studentId: selectedStudent,
+        studentId: selectedStudents[0],
         subjectId: selectedSubject,
         timeLimit: examConfig.hasTimeLimit ? examConfig.timeLimit : null
       });
 
       // Obtenemos los datos del estudiante y la materia para mostrarlos
-      const student = students.find(s => s._id === selectedStudent);
+      const student = students.find(s => s._id === selectedStudents[0]);
       const subject = subjects.find(s => s.id === selectedSubject);
 
       // Mostramos el mensaje de éxito con detalles
@@ -478,7 +528,7 @@ const Exams = () => {
           setCurrentExam(response.data);
         } else {
           // Si el usuario cancela, limpiamos la selección
-          setSelectedStudent('');
+          setSelectedStudents([]);
           setSelectedSubject('');
           setExamConfig({ timeLimit: 30, hasTimeLimit: false });
         }
@@ -510,7 +560,7 @@ const Exams = () => {
 
       // Mostrar loading
       Swal.fire({
-        title: 'Creando examen',
+        title: 'Creando exámenes',
         text: 'Por favor espere...',
         allowOutsideClick: false,
         didOpen: () => {
@@ -518,22 +568,30 @@ const Exams = () => {
         }
       });
 
-      // Primero crear el examen
-      const examResponse = await axiosInstance.post('/exams/create', {
-        studentId: selectedStudent,
-        subjectId: selectedSubject,
-        timeLimit: examConfig.hasTimeLimit ? examConfig.timeLimit : null
-      });
+      // Crear exámenes para cada estudiante seleccionado
+      const creationPromises = selectedStudents.map(studentId => 
+        axiosInstance.post('/exams/create', {
+          studentId,
+          subjectId: selectedSubject,
+          timeLimit: examConfig.hasTimeLimit ? examConfig.timeLimit : null
+        })
+      );
 
-      // Luego asignar las preguntas
-      await axiosInstance.post('/exams/assign-questions', {
-        examId: examResponse.data._id,
-        questionIds: selectedQuestions
-      });
+      const examResponses = await Promise.all(creationPromises);
+      
+      // Asignar preguntas a cada examen creado
+      const assignmentPromises = examResponses.map(response => 
+        axiosInstance.post('/exams/assign-questions', {
+          examId: response.data._id,
+          questionIds: selectedQuestions
+        })
+      );
+
+      await Promise.all(assignmentPromises);
 
       await Swal.fire({
         title: '¡Éxito!',
-        text: 'Examen creado y preguntas asignadas correctamente',
+        text: `Se han creado ${selectedStudents.length} exámenes exitosamente`,
         icon: 'success',
         confirmButtonColor: '#4CAF50'
       });
@@ -541,7 +599,7 @@ const Exams = () => {
       // Limpiar estados
       setSelectedQuestions([]);
       setShowQuestionSelection(false);
-      setSelectedStudent('');
+      setSelectedStudents([]);
       setSelectedSubject('');
       setExamConfig({ timeLimit: 30, hasTimeLimit: false });
 
@@ -549,7 +607,7 @@ const Exams = () => {
       console.error('Error:', error);
       Swal.fire({
         title: 'Error',
-        text: 'No se pudo crear el examen',
+        text: 'No se pudieron crear los exámenes',
         icon: 'error',
         confirmButtonColor: '#d33'
       });
@@ -768,7 +826,18 @@ const Exams = () => {
     const handleReviewExam = async (examId) => {
       try {
         const response = await axiosInstance.get(`/exams/${examId}/answers`);
-        setExamAnswers(response.data.answers);
+        console.log('Respuestas obtenidas:', response.data);
+
+        // Asegurarnos de que las respuestas están en el formato correcto
+        const formattedAnswers = response.data.answers.map(answer => ({
+          _id: answer._id,
+          question: answer.question?.question || answer.question || '',
+          studentAnswer: answer.studentAnswer || answer.answer || '',
+          correctAnswer: answer.correctAnswer || answer.question?.correctAnswer || '',
+          isCorrect: answer.isCorrect || false
+        }));
+
+        setExamAnswers(formattedAnswers);
         setExamToReview(examId);
       } catch (error) {
         console.error('Error al obtener respuestas:', error);
@@ -799,22 +868,35 @@ const Exams = () => {
 
         console.log('Respuesta de actualización:', response.data);
 
+        // Actualizar el estado local de las respuestas
+        setExamAnswers(prevAnswers => 
+          prevAnswers.map(answer => 
+            answer._id === answerId 
+              ? { ...answer, isCorrect } 
+              : answer
+          )
+        );
+
         // Actualizar la lista de exámenes
         const updatedExamsResponse = await axiosInstance.get('/exams/teacher/all');
-        setSubmittedExams(updatedExamsResponse.data);
+        const completedExams = updatedExamsResponse.data.filter(exam => exam.status === 'completed');
+        setSubmittedExams(completedExams);
 
-        // Actualizar también las respuestas mostradas en el modal
-        const updatedAnswersResponse = await axiosInstance.get(`/exams/${examToReview}/answers`);
-        setExamAnswers(updatedAnswersResponse.data.answers);
-
+        // Mostrar mensaje con más detalles
         Swal.fire({
           icon: 'success',
-          title: 'Actualizado',
-          text: 'La calificación se ha actualizado correctamente',
+          title: 'Calificación Actualizada',
+          html: `
+            <div style="text-align: left">
+              <p><b>Respuestas correctas:</b> ${response.data.stats.correctAnswers}</p>
+              <p><b>Respuestas incorrectas:</b> ${response.data.stats.incorrectAnswers}</p>
+              <p><b>Calificación final:</b> ${response.data.stats.calification}%</p>
+            </div>
+          `,
           toast: true,
           position: 'top-end',
           showConfirmButton: false,
-          timer: 2000
+          timer: 3000
         });
 
       } catch (error) {
@@ -846,21 +928,23 @@ const Exams = () => {
             </thead>
             <tbody>
               {submittedExams.map((exam) => (
-                <tr key={exam._id}>
-                  <td>{exam.student?.email?.split('@')[0] || 'No disponible'}</td>
-                  <td>{exam.subject?.name || 'No disponible'}</td>
-                  <td>{exam.correctAnswers}</td>
-                  <td>{exam.incorrectAnswers}</td>
-                  <td>{exam.calification}</td>
-                  <td>
-                    <button
-                      onClick={() => handleReviewExam(exam._id)}
-                      className="review-button"
-                    >
-                      Revisar
-                    </button>
-                  </td>
-                </tr>
+                exam.status === 'completed' && (  // Verificación adicional por seguridad
+                  <tr key={exam._id}>
+                    <td>{exam.student?.email?.split('@')[0] || 'No disponible'}</td>
+                    <td>{exam.subject?.name || 'No disponible'}</td>
+                    <td>{exam.correctAnswers}</td>
+                    <td>{exam.incorrectAnswers}</td>
+                    <td>{exam.calification}</td>
+                    <td>
+                      <button
+                        onClick={() => handleReviewExam(exam._id)}
+                        className="review-button"
+                      >
+                        Revisar
+                      </button>
+                    </td>
+                  </tr>
+                )
               ))}
             </tbody>
           </table>
@@ -872,34 +956,39 @@ const Exams = () => {
             <div className="modal-content review-modal">
               <h2>Revisión de Examen</h2>
               <div className="answers-list">
-                {examAnswers.map((answer, index) => (
-                  <div key={answer._id} className="answer-review-item">
-                    <div className="question-section">
-                      <h4>Pregunta {index + 1}</h4>
-                      <p>{answer.question.question}</p>
+                {examAnswers.map((answer, index) => {
+                  // Asegurémonos de que tenemos acceso a todas las propiedades
+                  console.log('Respuesta actual:', answer);
+                  
+                  return (
+                    <div key={answer._id} className="answer-review-item">
+                      <div className="question-section">
+                        <h4>Pregunta {index + 1}</h4>
+                        <p>{answer.question?.question || answer.question || 'Sin pregunta'}</p>
+                      </div>
+                      <div className="answer-section">
+                        <h4>Respuesta del alumno:</h4>
+                        <p>{answer.studentAnswer || answer.answer || 'Sin respuesta'}</p>
+                        <h4>Respuesta correcta:</h4>
+                        <p>{answer.correctAnswer || answer.question?.correctAnswer || 'Sin respuesta correcta'}</p>
+                      </div>
+                      <div className="evaluation-section">
+                        <button
+                          className={`correct-button ${answer.isCorrect ? 'active' : ''}`}
+                          onClick={() => handleUpdateAnswer(answer._id, true)}
+                        >
+                          Marcar como correcta
+                        </button>
+                        <button
+                          className={`incorrect-button ${!answer.isCorrect ? 'active' : ''}`}
+                          onClick={() => handleUpdateAnswer(answer._id, false)}
+                        >
+                          Marcar como incorrecta
+                        </button>
+                      </div>
                     </div>
-                    <div className="answer-section">
-                      <h4>Respuesta del alumno:</h4>
-                      <p>{answer.answer}</p>
-                      <h4>Respuesta correcta:</h4>
-                      <p>{answer.question.correctAnswer}</p>
-                    </div>
-                    <div className="evaluation-section">
-                      <button
-                        className={`correct-button ${answer.isCorrect ? 'active' : ''}`}
-                        onClick={() => handleUpdateAnswer(answer._id, true)}
-                      >
-                        Marcar como correcta
-                      </button>
-                      <button
-                        className={`incorrect-button ${!answer.isCorrect ? 'active' : ''}`}
-                        onClick={() => handleUpdateAnswer(answer._id, false)}
-                      >
-                        Marcar como incorrecta
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               <button
                 className="close-button"
@@ -928,7 +1017,7 @@ const Exams = () => {
           value={selectedSubject} 
           onChange={(e) => {
             setSelectedSubject(e.target.value);
-            setSelectedStudent(''); // Limpiar estudiante seleccionado
+            setSelectedStudents([]); // Limpiar estudiantes seleccionados
           }}
         >
           <option value="">Seleccione una materia</option>
@@ -940,22 +1029,30 @@ const Exams = () => {
         </select>
       </div>
 
-      {/* Selector de estudiante (solo se muestra si hay una materia seleccionada) */}
+      {/* Selector de estudiantes (solo se muestra si hay una materia seleccionada) */}
       {selectedSubject && (
         <div>
-          <h2>Seleccionar Estudiante</h2>
-          <select 
-            value={selectedStudent} 
-            onChange={(e) => setSelectedStudent(e.target.value)}
-          >
-            <option value="">Seleccione un estudiante</option>
+          <h2>Seleccionar Estudiantes</h2>
+          <div className="students-selection">
             {students.map(student => (
-              <option key={student._id} value={student._id}>
-                {student.username}
-              </option>
+              <div key={student._id} className="student-checkbox">
+                <input
+                  type="checkbox"
+                  id={`student-${student._id}`}
+                  checked={selectedStudents.includes(student._id)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedStudents(prev => [...prev, student._id]);
+                    } else {
+                      setSelectedStudents(prev => prev.filter(id => id !== student._id));
+                    }
+                  }}
+                />
+                <label htmlFor={`student-${student._id}`}>{student.username}</label>
+              </div>
             ))}
-          </select>
-          {selectedStudent && (
+          </div>
+          {selectedStudents.length > 0 && (
             <div className="time-limit-section">
               <h2>Configuración de Tiempo</h2>
               <div className="time-limit-controls">
@@ -1007,11 +1104,10 @@ const Exams = () => {
               </div>
             </div>
           )}
-          {selectedStudent && (
+          {selectedStudents.length > 0 && (
             <div>
               <button 
                 onClick={async () => {
-                  // Verificar primero si hay suficientes preguntas disponibles
                   try {
                     const response = await axiosInstance.get(`/questions/subject/${selectedSubject}`);
                     const availableQuestions = response.data;
@@ -1027,7 +1123,6 @@ const Exams = () => {
                     }
 
                     setQuestions(availableQuestions);
-                    // En lugar de crear el examen, mostrar la selección de preguntas
                     setShowQuestionSelection(true);
                   } catch (error) {
                     console.error('Error al obtener preguntas:', error);
@@ -1040,7 +1135,7 @@ const Exams = () => {
                 }}
                 className="next-step-button"
               >
-                Siguiente: Seleccionar Preguntas
+                Siguiente: Seleccionar Preguntas ({selectedStudents.length} estudiantes seleccionados)
               </button>
             </div>
           )}
