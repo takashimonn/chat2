@@ -122,28 +122,26 @@ const StudentExams = () => {
     fetchExams();
   }, []);
 
-  // Modificar la función formatTime para incluir minutos y segundos
+  // Modificar la función formatTime para manejar minutos y segundos
   const formatTime = (minutes) => {
-    const hrs = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+    const mins = Math.floor(minutes);
+    const secs = Math.floor((minutes % 1) * 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handleStartExam = async (examId) => {
     try {
       console.log('Iniciando examen:', examId);
       const response = await axiosInstance.get(`/exams/${examId}/questions`);
-      console.log('Respuesta completa:', response.data);
-
-      // Extraer los datos de la respuesta
+      
       const { questions, timeLimit } = response.data;
       
-      // Asegurarnos de que questions es un array antes de hacer map
+      // Guardar solo la pregunta y su ID, no la respuesta correcta
       const examQuestions = Array.isArray(questions) ? 
-        questions.map(q => q.question) : [];
-
-      console.log('Preguntas procesadas:', examQuestions);
-      console.log('Tiempo límite:', timeLimit);
+        questions.map(q => ({
+          _id: q.question._id,
+          question: q.question.question
+        })) : [];
 
       setExamQuestions(examQuestions);
       setCurrentExam(examId);
@@ -154,14 +152,14 @@ const StudentExams = () => {
         setTimeRemaining(timeLimit);
         const interval = setInterval(() => {
           setTimeRemaining(prev => {
-            if (prev <= 1) {
+            if (prev <= 0.016) { // aproximadamente 1 segundo
               clearInterval(interval);
               handleSubmitExam(true);
               return 0;
             }
-            return prev - 1;
+            return prev - (1/60); // restar un segundo (como fracción de minuto)
           });
-        }, 60000);
+        }, 1000); // actualizar cada segundo en lugar de cada minuto
         setTimerInterval(interval);
       }
 
@@ -241,9 +239,10 @@ const StudentExams = () => {
         }
       });
 
-      const formattedAnswers = Object.entries(answers).map(([questionId, answer]) => ({
-        questionId,
-        answer
+      // Formatear las respuestas usando los IDs correctos
+      const formattedAnswers = examQuestions.map((question, index) => ({
+        questionId: question._id,
+        answer: answers[index] || ''
       }));
 
       const response = await axiosInstance.post(
@@ -382,7 +381,7 @@ const StudentExams = () => {
               {examQuestions.map((question, index) => (
                 <div key={index} className="question-container">
                   <p className="question-number">Pregunta {index + 1}</p>
-                  <p className="question-text">{question}</p>
+                  <p className="question-text">{question.question}</p>
                   <textarea
                     value={answers[index] || ''}
                     onChange={(e) => handleAnswerChange(index, e.target.value)}

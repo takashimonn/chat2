@@ -86,9 +86,14 @@ exports.getExamQuestions = async (req, res) => {
     
     console.log('Preguntas encontradas:', examQuestions);
 
-    // Estructurar la respuesta como estaba originalmente
+    // Modificar la estructura de la respuesta para incluir el _id correcto
     const response = {
-      questions: examQuestions.map(eq => eq.question),
+      questions: examQuestions.map(eq => ({
+        question: {
+          _id: eq.question._id,
+          question: eq.question.question
+        }
+      })),
       timeLimit: exam.timeLimit
     };
 
@@ -144,11 +149,17 @@ exports.submitExam = async (req, res) => {
     answers.forEach(answer => {
       // Buscamos la pregunta correspondiente
       const questionData = examQuestions.find(
-        eq => eq.question._id.toString() === answer.questionId
+        eq => eq.question._id.toString() === answer.questionId.toString()
       );
 
+      console.log('Comparando respuesta:', {
+        preguntaID: answer.questionId,
+        respuestaAlumno: answer.answer,
+        respuestaCorrecta: questionData?.question.correctAnswer
+      });
+
       // Comparamos la respuesta del alumno con la respuesta correcta
-      if (questionData && answer.answer === questionData.question.correctAnswer) {
+      if (questionData && answer.answer.trim() === questionData.question.correctAnswer.trim()) {
         correctAnswers++;
       } else {
         incorrectAnswers++;
