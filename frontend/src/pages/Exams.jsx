@@ -828,13 +828,10 @@ const Exams = () => {
         const response = await axiosInstance.get(`/exams/${examId}/answers`);
         console.log('Respuestas obtenidas:', response.data);
 
-        // Asegurarnos de que las respuestas están en el formato correcto
+        // Asegurarnos de que cada respuesta tenga un valor isCorrect definido
         const formattedAnswers = response.data.answers.map(answer => ({
-          _id: answer._id,
-          question: answer.question?.question || answer.question || '',
-          studentAnswer: answer.studentAnswer || answer.answer || '',
-          correctAnswer: answer.correctAnswer || answer.question?.correctAnswer || '',
-          isCorrect: answer.isCorrect || false
+          ...answer,
+          isCorrect: answer.isCorrect === true // Convertir explícitamente a booleano
         }));
 
         setExamAnswers(formattedAnswers);
@@ -851,7 +848,6 @@ const Exams = () => {
 
     const handleUpdateAnswer = async (answerId, isCorrect) => {
       try {
-        // Mostrar loading
         Swal.fire({
           title: 'Actualizando...',
           text: 'Por favor espere',
@@ -861,14 +857,7 @@ const Exams = () => {
           }
         });
 
-        // Actualizar la respuesta
-        const response = await axiosInstance.patch(`/exams/${examToReview}/answers/${answerId}`, {
-          isCorrect
-        });
-
-        console.log('Respuesta de actualización:', response.data);
-
-        // Actualizar el estado local de las respuestas
+        // Actualizar primero el estado local para feedback inmediato
         setExamAnswers(prevAnswers => 
           prevAnswers.map(answer => 
             answer._id === answerId 
@@ -877,12 +866,15 @@ const Exams = () => {
           )
         );
 
+        const response = await axiosInstance.patch(`/exams/${examToReview}/answers/${answerId}`, {
+          isCorrect
+        });
+
         // Actualizar la lista de exámenes
         const updatedExamsResponse = await axiosInstance.get('/exams/teacher/all');
         const completedExams = updatedExamsResponse.data.filter(exam => exam.status === 'completed');
         setSubmittedExams(completedExams);
 
-        // Mostrar mensaje con más detalles
         Swal.fire({
           icon: 'success',
           title: 'Calificación Actualizada',

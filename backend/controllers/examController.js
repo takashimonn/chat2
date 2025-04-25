@@ -131,58 +131,52 @@ exports.submitExam = async (req, res) => {
   try {
     const { examId } = req.params;
     const { answers } = req.body;
-    console.log('Recibiendo respuestas:', { examId, answers });
 
-    // 1. Obtener todas las preguntas del examen
+    // Obtener todas las preguntas del examen con sus respuestas correctas
     const examQuestions = await ExamQuestion.find({ exam: examId })
-      .populate('question');
+      .populate('question')
+      .lean();
 
-    if (!examQuestions.length) {
-      return res.status(404).json({ message: 'No se encontraron preguntas para este examen' });
-    }
-
-    // 2. Calcular respuestas correctas e incorrectas
     let correctAnswers = 0;
     let incorrectAnswers = 0;
+    let totalScore = 0;
+    let obtainedScore = 0;
 
-    // Iteramos sobre cada respuesta recibida
-    answers.forEach(answer => {
-      // Buscamos la pregunta correspondiente
-      const questionData = examQuestions.find(
-        eq => eq.question._id.toString() === answer.questionId.toString()
+    // Actualizar cada respuesta y marcar si es correcta o no
+    for (const examQuestion of examQuestions) {
+      const studentAnswer = answers.find(a => a.questionId === examQuestion.question._id.toString());
+      const isCorrect = studentAnswer?.answer.trim().toLowerCase() === 
+                       examQuestion.question.correctAnswer.trim().toLowerCase();
+
+      // Actualizar la respuesta con el campo isCorrect inicializado
+      await ExamQuestion.findByIdAndUpdate(
+        examQuestion._id,
+        {
+          answer: studentAnswer?.answer || '',
+          isCorrect: isCorrect // Inicializamos explícitamente isCorrect
+        }
       );
 
-      console.log('Comparando respuesta:', {
-        preguntaID: answer.questionId,
-        respuestaAlumno: answer.answer,
-        respuestaCorrecta: questionData?.question.correctAnswer
-      });
-
-      // Comparamos la respuesta del alumno con la respuesta correcta
-      if (questionData && answer.answer.trim() === questionData.question.correctAnswer.trim()) {
+      // Actualizar contadores
+      if (isCorrect) {
         correctAnswers++;
+        obtainedScore += (examQuestion.question.score || 10);
       } else {
         incorrectAnswers++;
       }
+      totalScore += (examQuestion.question.score || 10);
+    }
+
+    // Calcular calificación
+    const calification = Math.round((obtainedScore / totalScore) * 100);
+
+    // Actualizar el examen
+    await Exam.findByIdAndUpdate(examId, {
+      status: 'completed',
+      correctAnswers,
+      incorrectAnswers,
+      calification
     });
-
-    // 3. Calcular calificación (sobre 100)
-    const totalQuestions = examQuestions.length;
-    const calification = Math.round((correctAnswers / totalQuestions) * 100);
-
-    // 4. Actualizar el examen con los resultados
-    const updatedExam = await Exam.findByIdAndUpdate(
-      examId,
-      {
-        correctAnswers,
-        incorrectAnswers,
-        calification,
-        status: 'completed'
-      },
-      { new: true }
-    );
-
-    console.log('Examen actualizado:', updatedExam);
 
     res.json({
       message: 'Examen enviado correctamente',
@@ -195,7 +189,7 @@ exports.submitExam = async (req, res) => {
 
   } catch (error) {
     console.error('Error al enviar examen:', error);
-    res.status(500).json({ message: 'Error al procesar el examen' });
+    res.status(500).json({ message: 'Error al enviar el examen' });
   }
 };
 
@@ -276,11 +270,13 @@ exports.updateAnswer = async (req, res) => {
     let correctAnswers = 0;
     let incorrectAnswers = 0;
 
+    // Asegurarnos de que cada respuesta tenga un valor isCorrect definido
     allAnswers.forEach(answer => {
-      const questionScore = answer.question.score || 10; // valor por defecto de 10 si no hay score
+      const questionScore = answer.question.score || 10;
       totalScore += questionScore;
 
-      if (answer.isCorrect) {
+      // Usar el valor explícito de isCorrect
+      if (answer.isCorrect === true) {
         obtainedScore += questionScore;
         correctAnswers++;
       } else {
@@ -288,7 +284,7 @@ exports.updateAnswer = async (req, res) => {
       }
     });
 
-    // Calcular la calificación como porcentaje del puntaje obtenido
+    // Calcular la calificación
     const calification = Math.round((obtainedScore / totalScore) * 100);
 
     console.log('Cálculo de calificación:', {
@@ -299,7 +295,7 @@ exports.updateAnswer = async (req, res) => {
       calification
     });
 
-    // Actualizar el examen con los nuevos totales
+    // Actualizar el examen
     const updatedExam = await Exam.findByIdAndUpdate(
       examId,
       {
