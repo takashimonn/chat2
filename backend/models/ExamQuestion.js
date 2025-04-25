@@ -10,6 +10,11 @@ const examQuestionSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Question',
     required: true
+  },
+  answer: String,
+  isCorrect: {
+    type: Boolean,
+    default: false
   }
 });
 

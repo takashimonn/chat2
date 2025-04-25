@@ -219,4 +219,83 @@ exports.getExamById = async (req, res) => {
     console.error('Error al obtener examen:', error);
     res.status(500).json({ message: 'Error al obtener el examen' });
   }
+};
+
+exports.getExamAnswers = async (req, res) => {
+  try {
+    const { examId } = req.params;
+    const examQuestions = await ExamQuestion.find({ exam: examId })
+      .populate('question');
+
+    if (!examQuestions) {
+      return res.status(404).json({ message: 'No se encontraron respuestas' });
+    }
+
+    res.json({ answers: examQuestions });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ message: 'Error al obtener respuestas' });
+  }
+};
+
+exports.updateAnswer = async (req, res) => {
+  try {
+    const { examId, answerId } = req.params;
+    const { isCorrect } = req.body;
+
+    console.log('Actualizando respuesta:', { examId, answerId, isCorrect });
+
+    // Actualizar el estado de la respuesta
+    await ExamQuestion.findByIdAndUpdate(
+      answerId,
+      { isCorrect: isCorrect },
+      { new: true }
+    );
+
+    // Obtener todas las respuestas del examen
+    const allAnswers = await ExamQuestion.find({ exam: examId });
+    
+    // Contar respuestas correctas e incorrectas
+    const correctAnswers = allAnswers.filter(answer => answer.isCorrect === true).length;
+    const incorrectAnswers = allAnswers.length - correctAnswers;
+    
+    // Calcular la nueva calificación
+    const calification = Math.round((correctAnswers / allAnswers.length) * 100);
+
+    console.log('Nuevas estadísticas:', {
+      total: allAnswers.length,
+      correctAnswers,
+      incorrectAnswers,
+      calification
+    });
+
+    // Actualizar el examen con los nuevos totales
+    const updatedExam = await Exam.findByIdAndUpdate(
+      examId,
+      {
+        correctAnswers,
+        incorrectAnswers,
+        calification
+      },
+      { new: true }
+    );
+
+    console.log('Examen actualizado:', updatedExam);
+
+    res.json({
+      message: 'Respuesta actualizada correctamente',
+      stats: {
+        correctAnswers,
+        incorrectAnswers,
+        calification
+      }
+    });
+
+  } catch (error) {
+    console.error('Error completo:', error);
+    res.status(500).json({ 
+      message: 'Error al actualizar respuesta',
+      error: error.message 
+    });
+  }
 }; 

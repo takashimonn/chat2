@@ -15,4 +15,7 @@ router.get('/teacher/all', authMiddleware, examController.getTeacherExams);
 
 router.post('/:examId/submit', authMiddleware, examController.submitExam);
 
+router.get('/:examId/answers', authMiddleware, examController.getExamAnswers);
+router.patch('/:examId/answers/:answerId', authMiddleware, examController.updateAnswer);
+
 module.exports = router; 

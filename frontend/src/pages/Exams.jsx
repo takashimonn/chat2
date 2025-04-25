@@ -325,6 +325,8 @@ const Exams = () => {
     hasTimeLimit: false
   });
   const [showQuestionSelection, setShowQuestionSelection] = useState(false);
+  const [examToReview, setExamToReview] = useState(null);
+  const [examAnswers, setExamAnswers] = useState([]);
 
   // Agregamos un useEffect para manejar los estilos
   useEffect(() => {
@@ -763,6 +765,68 @@ const Exams = () => {
   };
 
   const TeacherExamList = () => {
+    const handleReviewExam = async (examId) => {
+      try {
+        const response = await axiosInstance.get(`/exams/${examId}/answers`);
+        setExamAnswers(response.data.answers);
+        setExamToReview(examId);
+      } catch (error) {
+        console.error('Error al obtener respuestas:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudieron cargar las respuestas del examen'
+        });
+      }
+    };
+
+    const handleUpdateAnswer = async (answerId, isCorrect) => {
+      try {
+        // Mostrar loading
+        Swal.fire({
+          title: 'Actualizando...',
+          text: 'Por favor espere',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        // Actualizar la respuesta
+        const response = await axiosInstance.patch(`/exams/${examToReview}/answers/${answerId}`, {
+          isCorrect
+        });
+
+        console.log('Respuesta de actualización:', response.data);
+
+        // Actualizar la lista de exámenes
+        const updatedExamsResponse = await axiosInstance.get('/exams/teacher/all');
+        setSubmittedExams(updatedExamsResponse.data);
+
+        // Actualizar también las respuestas mostradas en el modal
+        const updatedAnswersResponse = await axiosInstance.get(`/exams/${examToReview}/answers`);
+        setExamAnswers(updatedAnswersResponse.data.answers);
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Actualizado',
+          text: 'La calificación se ha actualizado correctamente',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 2000
+        });
+
+      } catch (error) {
+        console.error('Error al actualizar:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudo actualizar la respuesta'
+        });
+      }
+    };
+
     return (
       <div className="submitted-exams-section">
         <h2>Exámenes Entregados</h2>
@@ -777,6 +841,7 @@ const Exams = () => {
                 <th>Correctas</th>
                 <th>Incorrectas</th>
                 <th>Calificación</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -787,10 +852,66 @@ const Exams = () => {
                   <td>{exam.correctAnswers}</td>
                   <td>{exam.incorrectAnswers}</td>
                   <td>{exam.calification}</td>
+                  <td>
+                    <button
+                      onClick={() => handleReviewExam(exam._id)}
+                      className="review-button"
+                    >
+                      Revisar
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        )}
+
+        {/* Modal de revisión */}
+        {examToReview && (
+          <div className="modal-overlay">
+            <div className="modal-content review-modal">
+              <h2>Revisión de Examen</h2>
+              <div className="answers-list">
+                {examAnswers.map((answer, index) => (
+                  <div key={answer._id} className="answer-review-item">
+                    <div className="question-section">
+                      <h4>Pregunta {index + 1}</h4>
+                      <p>{answer.question.question}</p>
+                    </div>
+                    <div className="answer-section">
+                      <h4>Respuesta del alumno:</h4>
+                      <p>{answer.answer}</p>
+                      <h4>Respuesta correcta:</h4>
+                      <p>{answer.question.correctAnswer}</p>
+                    </div>
+                    <div className="evaluation-section">
+                      <button
+                        className={`correct-button ${answer.isCorrect ? 'active' : ''}`}
+                        onClick={() => handleUpdateAnswer(answer._id, true)}
+                      >
+                        Marcar como correcta
+                      </button>
+                      <button
+                        className={`incorrect-button ${!answer.isCorrect ? 'active' : ''}`}
+                        onClick={() => handleUpdateAnswer(answer._id, false)}
+                      >
+                        Marcar como incorrecta
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button
+                className="close-button"
+                onClick={() => {
+                  setExamToReview(null);
+                  setExamAnswers([]);
+                }}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
         )}
       </div>
     );
@@ -859,19 +980,18 @@ const Exams = () => {
                       step="1"
                       value={examConfig.timeLimit}
                       onChange={(e) => {
-                        const value = e.target.value === '' ? '' : parseInt(e.target.value);
-                        setExamConfig(prev => ({
-                          ...prev,
-                          timeLimit: value
-                        }));
-                      }}
-                      onBlur={(e) => {
-                        // Solo forzar el mínimo cuando el usuario termina de editar
-                        const value = e.target.value === '' ? 1 : parseInt(e.target.value);
+                        const value = parseInt(e.target.value) || 1;
                         setExamConfig(prev => ({
                           ...prev,
                           timeLimit: Math.max(1, value)
                         }));
+                      }}
+                      onKeyDown={(e) => {
+                        // Permitir solo números, backspace, delete, y teclas de navegación
+                        if (!/[\d\b]/.test(e.key) && 
+                            !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
+                          e.preventDefault();
+                        }
                       }}
                       style={{
                         width: '80px',
