@@ -5,5 +5,6 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 router.get('/subject/:subjectId', authMiddleware, getQuestionsBySubject);
 router.post('/create', authMiddleware, createQuestion);
+router.post('/', authMiddleware, createQuestion);
 
 module.exports = router; 

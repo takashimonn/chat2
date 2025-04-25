@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Question = require('../models/Question');
 
 const getQuestionsBySubject = async (req, res) => {
@@ -17,11 +18,34 @@ const getQuestionsBySubject = async (req, res) => {
 
 const createQuestion = async (req, res) => {
   try {
-    const question = new Question(req.body);
-    await question.save();
-    res.status(201).json(question);
+    const { subject, question, correctAnswer, score } = req.body;
+    console.log('Datos recibidos en el backend:', { subject, question, correctAnswer, score });
+
+    // Validar que el subject sea un ObjectId válido
+    if (!mongoose.Types.ObjectId.isValid(subject)) {
+      return res.status(400).json({
+        message: 'ID de materia inválido',
+        receivedSubject: subject
+      });
+    }
+
+    const newQuestion = new Question({
+      subject,
+      question,
+      correctAnswer,
+      score: parseInt(score) || 10
+    });
+
+    const savedQuestion = await newQuestion.save();
+    console.log('Pregunta guardada:', savedQuestion);
+
+    res.status(201).json(savedQuestion);
   } catch (error) {
-    res.status(500).json({ message: 'Error al crear pregunta' });
+    console.error('Error detallado:', error);
+    res.status(500).json({ 
+      message: 'Error al crear la pregunta',
+      error: error.message
+    });
   }
 };
 

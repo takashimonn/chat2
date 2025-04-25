@@ -10,6 +10,7 @@ console.log('Métodos disponibles en subjectController:', Object.keys(subjectCon
 router.post('/', authMiddleware, subjectController.createSubject);
 router.get('/', subjectController.getSubjects);
 router.get('/teacher', authMiddleware, subjectController.getTeacherSubjects);
+router.get('/teacher/:teacherId', authMiddleware, subjectController.getTeacherSubjects);
 // router.get('/user', subjectController.getSubjectsByUser);
 
 // Agregar la nueva ruta para estudiantes

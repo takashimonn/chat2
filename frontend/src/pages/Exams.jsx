@@ -11,12 +11,21 @@ const Exams = () => {
   const [currentExam, setCurrentExam] = useState(null);
   const [availableQuestions, setAvailableQuestions] = useState([]);
   const [submittedExams, setSubmittedExams] = useState([]);
+  const [showQuestionModal, setShowQuestionModal] = useState(false);
+  const [teacherSubjects, setTeacherSubjects] = useState([]);
+  const [newQuestion, setNewQuestion] = useState({
+    subject: '',
+    questionText: '',
+    correctAnswer: '',
+    score: 10
+  });
 
   // Obtener las materias del profesor
   useEffect(() => {
     const fetchSubjects = async () => {
       try {
         const response = await axiosInstance.get('/subjects/teacher');
+        console.log('Materias cargadas:', response.data);
         setSubjects(response.data);
       } catch (error) {
         console.error('Error al obtener materias:', error);
@@ -76,6 +85,21 @@ const Exams = () => {
     fetchSubmittedExams();
   }, []);
 
+  // Función para obtener las materias del maestro
+  useEffect(() => {
+    const fetchTeacherSubjects = async () => {
+      try {
+        const response = await axiosInstance.get('/subjects/teacher');
+        console.log('Materias del profesor:', response.data);
+        setTeacherSubjects(response.data);
+      } catch (error) {
+        console.error('Error al obtener materias:', error);
+      }
+    };
+
+    fetchTeacherSubjects();
+  }, []);
+
   const handleCreateExam = async () => {
     try {
       console.log('Creando examen para:', {
@@ -116,6 +140,43 @@ const Exams = () => {
       console.log('Preguntas asignadas correctamente');
     } catch (error) {
       console.error('Error al asignar preguntas:', error);
+    }
+  };
+
+  // Función para manejar la creación de preguntas
+  const handleCreateQuestion = async (e) => {
+    e.preventDefault();
+    
+    // Para debug
+    console.log('Estado actual de newQuestion:', newQuestion);
+    
+    const questionData = {
+      subject: newQuestion.subject, // Esto ya debería ser el ID
+      question: newQuestion.questionText,
+      correctAnswer: newQuestion.correctAnswer,
+      score: parseInt(newQuestion.score) || 10
+    };
+
+    console.log('Datos a enviar al backend:', questionData);
+
+    try {
+      const response = await axiosInstance.post('/questions/create', questionData);
+      console.log('Respuesta:', response.data);
+
+      // Limpiar el formulario y cerrar modal
+      setShowQuestionModal(false);
+      setNewQuestion({
+        subject: '',
+        questionText: '',
+        correctAnswer: '',
+        score: 10
+      });
+
+      alert('Pregunta creada exitosamente');
+    } catch (error) {
+      console.error('Error completo:', error);
+      console.error('Datos del error:', error.response?.data);
+      alert('Error al crear la pregunta. Por favor verifica todos los campos.');
     }
   };
 
@@ -235,6 +296,95 @@ const Exams = () => {
 
       {renderQuestionSelection()}
 
+      <button 
+        className="add-question-button"
+        onClick={() => setShowQuestionModal(true)}
+      >
+        Agregar Nueva Pregunta
+      </button>
+
+      {/* Modal para crear preguntas */}
+      {showQuestionModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Crear Nueva Pregunta</h2>
+            <form onSubmit={handleCreateQuestion}>
+              <div className="form-group">
+                <label>Materia:</label>
+                <select
+                  value={newQuestion.subject}
+                  onChange={(e) => {
+                    console.log('ID de materia seleccionada:', e.target.value);
+                    setNewQuestion({
+                      ...newQuestion,
+                      subject: e.target.value
+                    });
+                  }}
+                  required
+                >
+                  <option value="">Seleccione una materia</option>
+                  {subjects.map(subject => (
+                    <option key={subject.id} value={subject.id}>
+                      {subject.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Pregunta:</label>
+                <textarea
+                  value={newQuestion.questionText}
+                  onChange={(e) => setNewQuestion({
+                    ...newQuestion,
+                    questionText: e.target.value
+                  })}
+                  required
+                  placeholder="Escribe la pregunta aquí"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Respuesta Correcta:</label>
+                <textarea
+                  value={newQuestion.correctAnswer}
+                  onChange={(e) => setNewQuestion({
+                    ...newQuestion,
+                    correctAnswer: e.target.value
+                  })}
+                  required
+                  placeholder="Escribe la respuesta correcta aquí"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Puntaje:</label>
+                <input
+                  type="number"
+                  value={newQuestion.score}
+                  onChange={(e) => setNewQuestion({
+                    ...newQuestion,
+                    score: Number(e.target.value)
+                  })}
+                  required
+                  min="1"
+                />
+              </div>
+
+              <div className="modal-buttons">
+                <button type="submit">Guardar Pregunta</button>
+                <button 
+                  type="button" 
+                  onClick={() => setShowQuestionModal(false)}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Agregamos la tabla de exámenes entregados */}
       <TeacherExamList />
     </div>
@@ -274,6 +424,84 @@ const styles = `
 
 .exams-table td {
   color: #333;
+}
+
+.add-question-button {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 500px;
+  max-width: 90%;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-top: 5px;
+}
+
+.form-group textarea {
+  min-height: 100px;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.modal-buttons button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.modal-buttons button[type="submit"] {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.modal-buttons button[type="button"] {
+  background-color: #f44336;
+  color: white;
 }
 `;
 
