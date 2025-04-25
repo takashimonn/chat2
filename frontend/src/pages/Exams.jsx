@@ -284,6 +284,40 @@ const swalStyles = `
   background: #4CAF50 !important;
   color: white !important;
 }
+
+.swal2-popup {
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.swal2-title-custom {
+  font-size: 16px !important;
+  color: #333 !important;
+  margin-bottom: 5px !important;
+}
+
+.animated {
+  animation-duration: 0.5s;
+  animation-fill-mode: both;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translate3d(100%, 0, 0);
+    visibility: visible;
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.slideInRight {
+  animation-name: slideInRight;
+}
+
+.fas {
+  margin-right: 5px;
+}
 `;
 
 const newTimeStyles = `
@@ -352,6 +386,171 @@ const newTimeStyles = `
   }
 `;
 
+const modalStyles = `
+  .modal-overlay {
+    background-color: rgba(0, 0, 0, 0.75);
+    animation: fadeIn 0.3s ease;
+  }
+
+  .review-modal {
+    max-width: 800px;
+    width: 95%;
+    max-height: 90vh;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  }
+
+  .review-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .review-header h2 {
+    margin: 0;
+    color: #333;
+    font-size: 1.5rem;
+  }
+
+  .answers-list {
+    padding: 1.5rem;
+    overflow-y: auto;
+    max-height: calc(90vh - 80px);
+  }
+
+  .answer-review-item {
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    border: 1px solid #dee2e6;
+  }
+
+  .question-header {
+    padding: 1rem 1.5rem;
+    background: #fff;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .question-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #495057;
+  }
+
+  .status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  .status-badge.correct {
+    background: #d4edda;
+    color: #155724;
+  }
+
+  .status-badge.incorrect {
+    background: #f8d7da;
+    color: #721c24;
+  }
+
+  .answer-content {
+    padding: 1rem 1.5rem;
+  }
+
+  .content-row {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #eee;
+  }
+
+  .content-row:last-child {
+    border-bottom: none;
+  }
+
+  .label {
+    width: 180px;
+    font-weight: 600;
+    color: #495057;
+    text-align: right;
+    padding-right: 1rem;
+  }
+
+  .value {
+    flex: 1;
+    color: #212529;
+    padding-left: 1rem;
+    border-left: 2px solid #dee2e6;
+  }
+
+  .evaluation-buttons {
+    display: flex;
+    gap: 1rem;
+    padding-top: 1rem;
+    margin-top: 1rem;
+    border-top: 1px solid #dee2e6;
+  }
+
+  .eval-button {
+    flex: 1;
+    padding: 0.5rem;
+    border: none;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .eval-button:first-child {
+    background: #e9f7ef;
+    color: #28a745;
+  }
+
+  .eval-button:last-child {
+    background: #fdf1f2;
+    color: #dc3545;
+  }
+
+  .eval-button:first-child.active {
+    background: #28a745;
+    color: white;
+  }
+
+  .eval-button:last-child.active {
+    background: #dc3545;
+    color: white;
+  }
+
+  .eval-button:hover {
+    opacity: 0.9;
+  }
+
+  .close-button {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 0.5rem;
+  }
+
+  .close-button:hover {
+    color: #343a40;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+`;
+
 const Exams = () => {
   const [subjects, setSubjects] = useState([]);
   const [students, setStudents] = useState([]);
@@ -383,7 +582,7 @@ const Exams = () => {
   useEffect(() => {
     // Creamos el elemento style
     const styleSheet = document.createElement("style");
-    styleSheet.innerText = styles + newStyles + swalStyles + newTimeStyles;
+    styleSheet.innerText = styles + newStyles + swalStyles + newTimeStyles + modalStyles;
     document.head.appendChild(styleSheet);
 
     // Limpieza cuando el componente se desmonte
@@ -879,16 +1078,38 @@ const Exams = () => {
           icon: 'success',
           title: 'Calificación Actualizada',
           html: `
-            <div style="text-align: left">
-              <p><b>Respuestas correctas:</b> ${response.data.stats.correctAnswers}</p>
-              <p><b>Respuestas incorrectas:</b> ${response.data.stats.incorrectAnswers}</p>
-              <p><b>Calificación final:</b> ${response.data.stats.calification}%</p>
+            <div style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding: 10px;
+              background: #f8f9fa;
+              border-radius: 8px;
+              margin: 10px 0;
+              font-size: 14px;
+            ">
+              <span style="color: #28a745">
+                <i class="fas fa-check-circle"></i> Correctas: ${response.data.stats.correctAnswers}
+              </span>
+              <span style="color: #dc3545">
+                <i class="fas fa-times-circle"></i> Incorrectas: ${response.data.stats.incorrectAnswers}
+              </span>
+              <span style="color: #17a2b8">
+                <i class="fas fa-star"></i> Calificación: ${response.data.stats.calification}%
+              </span>
             </div>
           `,
           toast: true,
           position: 'top-end',
           showConfirmButton: false,
-          timer: 3000
+          timer: 3000,
+          timerProgressBar: true,
+          background: '#fff',
+          padding: '1em',
+          customClass: {
+            popup: 'animated slideInRight',
+            title: 'swal2-title-custom'
+          }
         });
 
       } catch (error) {
@@ -946,51 +1167,57 @@ const Exams = () => {
         {examToReview && (
           <div className="modal-overlay">
             <div className="modal-content review-modal">
-              <h2>Revisión de Examen</h2>
+              <div className="review-header">
+                <h2>Revisión de Examen</h2>
+                <button className="close-button" onClick={() => {
+                  setExamToReview(null);
+                  setExamAnswers([]);
+                }}>×</button>
+              </div>
               <div className="answers-list">
-                {examAnswers.map((answer, index) => {
-                  // Asegurémonos de que tenemos acceso a todas las propiedades
-                  console.log('Respuesta actual:', answer);
-                  
-                  return (
-                    <div key={answer._id} className="answer-review-item">
-                      <div className="question-section">
-                        <h4>Pregunta {index + 1}</h4>
-                        <p>{answer.question?.question || answer.question || 'Sin pregunta'}</p>
+                {examAnswers.map((answer, index) => (
+                  <div key={answer._id} className="answer-review-item">
+                    <div className="question-header">
+                      <h3>Pregunta {index + 1}</h3>
+                      <span className={`status-badge ${answer.isCorrect ? 'correct' : 'incorrect'}`}>
+                        {answer.isCorrect ? 'Correcta' : 'Incorrecta'}
+                      </span>
+                    </div>
+                    
+                    <div className="answer-content">
+                      <div className="content-row">
+                        <span className="label">Pregunta:</span>
+                        <span className="value">{answer.question}</span>
                       </div>
-                      <div className="answer-section">
-                        <h4>Respuesta del alumno:</h4>
-                        <p>{answer.studentAnswer || answer.answer || 'Sin respuesta'}</p>
-                        <h4>Respuesta correcta:</h4>
-                        <p>{answer.correctAnswer || answer.question?.correctAnswer || 'Sin respuesta correcta'}</p>
+                      
+                      <div className="content-row">
+                        <span className="label">Respuesta del alumno:</span>
+                        <span className="value">{answer.studentAnswer}</span>
                       </div>
-                      <div className="evaluation-section">
+                      
+                      <div className="content-row">
+                        <span className="label">Respuesta correcta:</span>
+                        <span className="value">{answer.correctAnswer}</span>
+                      </div>
+
+                      <div className="evaluation-buttons">
                         <button
-                          className={`correct-button ${answer.isCorrect ? 'active' : ''}`}
+                          className={`eval-button ${answer.isCorrect ? 'active' : ''}`}
                           onClick={() => handleUpdateAnswer(answer._id, true)}
                         >
-                          Marcar como correcta
+                          Correcta
                         </button>
                         <button
-                          className={`incorrect-button ${!answer.isCorrect ? 'active' : ''}`}
+                          className={`eval-button ${!answer.isCorrect ? 'active' : ''}`}
                           onClick={() => handleUpdateAnswer(answer._id, false)}
                         >
-                          Marcar como incorrecta
+                          Incorrecta
                         </button>
                       </div>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
-              <button
-                className="close-button"
-                onClick={() => {
-                  setExamToReview(null);
-                  setExamAnswers([]);
-                }}
-              >
-                Cerrar
-              </button>
             </div>
           </div>
         )}
