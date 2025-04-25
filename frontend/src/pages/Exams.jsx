@@ -851,11 +851,30 @@ const Exams = () => {
                     <input
                       type="number"
                       min="1"
+                      step="1"
                       value={examConfig.timeLimit}
-                      onChange={(e) => setExamConfig(prev => ({
-                        ...prev,
-                        timeLimit: Math.max(1, parseInt(e.target.value) || 1)
-                      }))}
+                      onChange={(e) => {
+                        const value = e.target.value === '' ? '' : parseInt(e.target.value);
+                        setExamConfig(prev => ({
+                          ...prev,
+                          timeLimit: value
+                        }));
+                      }}
+                      onBlur={(e) => {
+                        // Solo forzar el mínimo cuando el usuario termina de editar
+                        const value = e.target.value === '' ? 1 : parseInt(e.target.value);
+                        setExamConfig(prev => ({
+                          ...prev,
+                          timeLimit: Math.max(1, value)
+                        }));
+                      }}
+                      style={{
+                        width: '80px',
+                        padding: '8px',
+                        fontSize: '14px',
+                        borderRadius: '4px',
+                        border: '1px solid #ddd'
+                      }}
                     />
                     <span>minutos</span>
                   </div>
@@ -937,12 +956,29 @@ const Exams = () => {
                 <input
                   type="number"
                   value={newQuestion.score}
-                  onChange={(e) => setNewQuestion({
-                    ...newQuestion,
-                    score: Number(e.target.value)
-                  })}
+                  onChange={(e) => {
+                    const value = e.target.value === '' ? '' : parseInt(e.target.value);
+                    setNewQuestion({
+                      ...newQuestion,
+                      score: value
+                    });
+                  }}
+                  onBlur={(e) => {
+                    // Aplicar valor mínimo de 1 cuando pierde el foco
+                    const value = e.target.value === '' ? 1 : parseInt(e.target.value);
+                    setNewQuestion({
+                      ...newQuestion,
+                      score: Math.max(1, value)
+                    });
+                  }}
+                  style={{
+                    width: '80px',
+                    padding: '8px',
+                    fontSize: '14px',
+                    borderRadius: '4px',
+                    border: '1px solid #ddd'
+                  }}
                   required
-                  min="1"
                 />
               </div>
 
