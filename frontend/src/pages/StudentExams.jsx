@@ -1,6 +1,45 @@
 import { useState, useEffect } from 'react';
 import axiosInstance from '../utils/axiosConfig';
+import Swal from 'sweetalert2';
 import '../styles/StudentExams.css';
+
+// Definimos los estilos fuera del componente
+const swalStyles = `
+  .swal2-popup {
+    font-size: 1rem;
+  }
+
+  .swal2-title {
+    font-size: 1.5rem;
+  }
+
+  .swal2-html-container {
+    margin: 1em 1.6em 0.3em;
+  }
+
+  .swal2-html-container h4 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+  }
+
+  .swal2-html-container p {
+    margin: 0.5rem 0;
+    font-size: 1rem;
+  }
+
+  .swal2-toast {
+    background: #4CAF50 !important;
+    color: white !important;
+  }
+
+  .swal2-toast .swal2-title {
+    color: white !important;
+  }
+
+  .swal2-toast .swal2-html-container {
+    color: white !important;
+  }
+`;
 
 const StudentExams = () => {
   const [exams, setExams] = useState([]);
@@ -9,6 +48,17 @@ const StudentExams = () => {
   const [currentExam, setCurrentExam] = useState(null);
   const [examQuestions, setExamQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
+
+  // Agregamos el useEffect para los estilos dentro del componente
+  useEffect(() => {
+    const styleSheet = document.createElement("style");
+    styleSheet.innerText = swalStyles;
+    document.head.appendChild(styleSheet);
+
+    return () => {
+      document.head.removeChild(styleSheet);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchExams = async () => {
@@ -32,17 +82,33 @@ const StudentExams = () => {
 
   const handleStartExam = async (examId) => {
     try {
-      console.log('Iniciando examen:', examId);
       const response = await axiosInstance.get(`/exams/${examId}/questions`);
-      console.log('Preguntas obtenidas:', response.data);
-      
       const questions = response.data.map(eq => eq.question);
       setExamQuestions(questions);
       setCurrentExam(examId);
       setShowModal(true);
+
+      // Toast de inicio de examen
+      await Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'info',
+        title: '¡Examen iniciado!',
+        text: 'Buena suerte',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        background: '#3498db',
+        color: '#fff'
+      });
     } catch (error) {
       console.error('Error al cargar preguntas:', error);
-      console.error('Detalles del error:', error.response?.data);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudieron cargar las preguntas del examen',
+        confirmButtonColor: '#d33'
+      });
     }
   };
 
@@ -55,7 +121,30 @@ const StudentExams = () => {
 
   const handleSubmitExam = async () => {
     try {
-      // Transformar las respuestas al formato que espera el backend
+      // Confirmación antes de enviar
+      const confirmResult = await Swal.fire({
+        title: '¿Estás seguro?',
+        text: 'Una vez enviado el examen no podrás modificar tus respuestas',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, enviar examen',
+        cancelButtonText: 'Cancelar'
+      });
+
+      if (!confirmResult.isConfirmed) return;
+
+      // Mostrar loading
+      Swal.fire({
+        title: 'Enviando examen',
+        text: 'Por favor espere...',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
       const formattedAnswers = Object.entries(answers).map(([questionId, answer]) => ({
         questionId,
         answer
@@ -66,16 +155,31 @@ const StudentExams = () => {
         { answers: formattedAnswers }
       );
 
-      // Mostrar resultados al alumno
       const { results } = response.data;
-      alert(`
-        Examen completado!
-        Respuestas correctas: ${results.correctAnswers}
-        Respuestas incorrectas: ${results.incorrectAnswers}
-        Calificación: ${results.calification}
-      `);
 
-      // Cerrar modal y actualizar lista de exámenes
+      // Mostrar resultados con un diseño más atractivo
+      await Swal.fire({
+        title: '¡Examen Completado!',
+        icon: 'success',
+        html: `
+          <div style="text-align: left; padding: 20px;">
+            <div style="margin-bottom: 20px;">
+              <h4 style="color: #4CAF50; margin-bottom: 15px;">Resultados:</h4>
+              <p><b>✅ Respuestas correctas:</b> ${results.correctAnswers}</p>
+              <p><b>❌ Respuestas incorrectas:</b> ${results.incorrectAnswers}</p>
+              <p><b>📊 Calificación:</b> ${results.calification}</p>
+            </div>
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
+              <p style="color: #666; margin: 0;">
+                <i>¡Gracias por completar tu examen!</i>
+              </p>
+            </div>
+          </div>
+        `,
+        confirmButtonColor: '#4CAF50',
+        confirmButtonText: 'Entendido'
+      });
+
       setShowModal(false);
       setCurrentExam(null);
       setAnswers({});
@@ -87,7 +191,32 @@ const StudentExams = () => {
 
     } catch (error) {
       console.error('Error al enviar examen:', error);
-      alert('Error al enviar el examen. Por favor intenta de nuevo.');
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo enviar el examen. Por favor intenta de nuevo.',
+        confirmButtonColor: '#d33'
+      });
+    }
+  };
+
+  // Modificar el botón de cerrar en el modal
+  const handleCloseExam = async () => {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Se perderán todas tus respuestas',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sí, salir',
+      cancelButtonText: 'No, continuar'
+    });
+
+    if (result.isConfirmed) {
+      setShowModal(false);
+      setCurrentExam(null);
+      setAnswers({});
     }
   };
 
@@ -129,13 +258,7 @@ const StudentExams = () => {
               <h2>Examen en Curso</h2>
               <button 
                 className="close-button"
-                onClick={() => {
-                  if(window.confirm('¿Estás seguro de salir? Se perderán tus respuestas.')) {
-                    setShowModal(false);
-                    setCurrentExam(null);
-                    setAnswers({});
-                  }
-                }}
+                onClick={handleCloseExam}
               >
                 ×
               </button>
