@@ -31,15 +31,17 @@ const LoginForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Verificar el captcha antes de continuar
     if (!captchaValue) {
-      Swal.fire({
+      await Swal.fire({
         icon: 'error',
         title: 'Error',
         text: 'Por favor verifica que no eres un robot'
       });
       return;
     }
-    
+
     try {
       // Verificar primero si hay una sesión activa
       const sessionCheck = await axiosInstance.post('/auth/check-session', {
@@ -78,10 +80,19 @@ const LoginForm = () => {
           timer: 1500,
           showConfirmButton: false
         });
-        
-        navigate('/dashboard');
+
+        // Agregar esta línea para forzar una recarga al dashboard
+        window.location.href = '/dashboard';
+        // Comentamos esta línea para evitar la redirección sin recarga
+        // navigate('/dashboard');
       }
     } catch (error) {
+      // Reiniciar el captcha solo si hay un error
+      if (window.grecaptcha) {
+        window.grecaptcha.reset();
+      }
+      setCaptchaValue(null);
+      
       console.error('Error al iniciar sesión:', error);
       Swal.fire({
         icon: 'error',
@@ -141,7 +152,14 @@ const LoginForm = () => {
               {recaptchaSiteKey ? (
                 <ReCAPTCHA
                   sitekey={recaptchaSiteKey}
-                  onChange={(value) => setCaptchaValue(value)}
+                  onChange={(value) => {
+                    setCaptchaValue(value);
+                    console.log('Captcha actualizado'); // Para debug
+                  }}
+                  onExpired={() => {
+                    setCaptchaValue(null);
+                    console.log('Captcha expirado'); // Para debug
+                  }}
                 />
               ) : (
                 <div className="recaptcha-error">
