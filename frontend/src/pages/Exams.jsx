@@ -324,6 +324,7 @@ const Exams = () => {
     timeLimit: 30,
     hasTimeLimit: false
   });
+  const [showQuestionSelection, setShowQuestionSelection] = useState(false);
 
   // Agregamos un useEffect para manejar los estilos
   useEffect(() => {
@@ -495,19 +496,19 @@ const Exams = () => {
 
   const handleAssignQuestions = async () => {
     try {
-      if (!selectedQuestions.length) {
+      if (selectedQuestions.length < 3) {
         await Swal.fire({
           title: '¡Atención!',
-          text: 'No hay preguntas seleccionadas',
+          text: 'Debes seleccionar al menos 3 preguntas',
           icon: 'warning',
           confirmButtonColor: '#3085d6'
         });
         return;
       }
 
-      // Mostrar loading mientras se asignan las preguntas
+      // Mostrar loading
       Swal.fire({
-        title: 'Asignando preguntas',
+        title: 'Creando examen',
         text: 'Por favor espere...',
         allowOutsideClick: false,
         didOpen: () => {
@@ -515,47 +516,38 @@ const Exams = () => {
         }
       });
 
+      // Primero crear el examen
+      const examResponse = await axiosInstance.post('/exams/create', {
+        studentId: selectedStudent,
+        subjectId: selectedSubject,
+        timeLimit: examConfig.hasTimeLimit ? examConfig.timeLimit : null
+      });
+
+      // Luego asignar las preguntas
       await axiosInstance.post('/exams/assign-questions', {
-        examId: currentExam._id,
+        examId: examResponse.data._id,
         questionIds: selectedQuestions
       });
 
-      // Toast de éxito
       await Swal.fire({
-        toast: true,
-        position: 'top-end',
+        title: '¡Éxito!',
+        text: 'Examen creado y preguntas asignadas correctamente',
         icon: 'success',
-        title: '¡Preguntas asignadas!',
-        html: `
-          <div style="text-align: left">
-            <p style="margin: 5px 0"><b>${selectedQuestions.length}</b> preguntas asignadas</p>
-            <small style="color: #666">El examen está listo para ser tomado</small>
-          </div>
-        `,
-        showConfirmButton: false,
-        timer: 3000,
-        timerProgressBar: true,
-        background: '#4CAF50',
-        color: '#fff',
-        didOpen: (toast) => {
-          toast.addEventListener('mouseenter', Swal.stopTimer)
-          toast.addEventListener('mouseleave', Swal.resumeTimer)
-        }
+        confirmButtonColor: '#4CAF50'
       });
 
-      // Limpiar selección
+      // Limpiar estados
       setSelectedQuestions([]);
-      
-      // Opcional: Actualizar la lista de preguntas disponibles
-      const updatedQuestions = questions.filter(q => !selectedQuestions.includes(q._id));
-      setQuestions(updatedQuestions);
+      setShowQuestionSelection(false);
+      setSelectedStudent('');
+      setSelectedSubject('');
+      setExamConfig({ timeLimit: 30, hasTimeLimit: false });
 
     } catch (error) {
-      console.error('Error al asignar preguntas:', error);
-      
-      await Swal.fire({
+      console.error('Error:', error);
+      Swal.fire({
         title: 'Error',
-        text: 'No se pudieron asignar las preguntas. Por favor, intente nuevamente.',
+        text: 'No se pudo crear el examen',
         icon: 'error',
         confirmButtonColor: '#d33'
       });
@@ -896,12 +888,84 @@ const Exams = () => {
             </div>
           )}
           {selectedStudent && (
-            <button onClick={handleCreateExam}>Crear Examen</button>
+            <div>
+              <button 
+                onClick={async () => {
+                  // Verificar primero si hay suficientes preguntas disponibles
+                  try {
+                    const response = await axiosInstance.get(`/questions/subject/${selectedSubject}`);
+                    const availableQuestions = response.data;
+
+                    if (availableQuestions.length < 3) {
+                      await Swal.fire({
+                        title: 'No hay suficientes preguntas',
+                        text: 'Debe haber al menos 3 preguntas disponibles para crear un examen',
+                        icon: 'warning',
+                        confirmButtonColor: '#3085d6'
+                      });
+                      return;
+                    }
+
+                    setQuestions(availableQuestions);
+                    // En lugar de crear el examen, mostrar la selección de preguntas
+                    setShowQuestionSelection(true);
+                  } catch (error) {
+                    console.error('Error al obtener preguntas:', error);
+                    Swal.fire({
+                      icon: 'error',
+                      title: 'Error',
+                      text: 'Error al cargar las preguntas disponibles'
+                    });
+                  }
+                }}
+                className="next-step-button"
+              >
+                Siguiente: Seleccionar Preguntas
+              </button>
+            </div>
           )}
         </div>
       )}
 
-      {renderQuestionSelection()}
+      {showQuestionSelection && (
+        <div className="question-selection-section">
+          <h2>Seleccionar Preguntas</h2>
+          <p>Selecciona al menos 3 preguntas para el examen</p>
+          <div className="questions-list">
+            {questions.map((questionItem) => (
+              <div key={questionItem._id} className="question-item">
+                <input
+                  type="checkbox"
+                  id={questionItem._id}
+                  checked={selectedQuestions.includes(questionItem._id)}
+                  onChange={() => {
+                    const newSelected = selectedQuestions.includes(questionItem._id)
+                      ? selectedQuestions.filter(id => id !== questionItem._id)
+                      : [...selectedQuestions, questionItem._id];
+                    setSelectedQuestions(newSelected);
+                  }}
+                />
+                <label htmlFor={questionItem._id}>{questionItem.question}</label>
+              </div>
+            ))}
+          </div>
+          <div className="buttons-container">
+            <button 
+              onClick={() => setShowQuestionSelection(false)}
+              className="cancel-button"
+            >
+              Cancelar
+            </button>
+            <button 
+              onClick={handleAssignQuestions}
+              className="create-exam-button"
+              disabled={selectedQuestions.length < 3}
+            >
+              Crear Examen
+            </button>
+          </div>
+        </div>
+      )}
 
       <button 
         className="add-question-button"
