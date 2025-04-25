@@ -19,6 +19,7 @@ const Exams = () => {
     correctAnswer: '',
     score: 10
   });
+  const [questionsList, setQuestionsList] = useState([]);
 
   // Obtener las materias del profesor
   useEffect(() => {
@@ -147,37 +148,69 @@ const Exams = () => {
   const handleCreateQuestion = async (e) => {
     e.preventDefault();
     
-    // Para debug
-    console.log('Estado actual de newQuestion:', newQuestion);
-    
-    const questionData = {
-      subject: newQuestion.subject, // Esto ya debería ser el ID
+    // Agregamos la pregunta a la lista temporal con la estructura correcta
+    const newQuestionData = {
+      subject: newQuestion.subject,
       question: newQuestion.questionText,
       correctAnswer: newQuestion.correctAnswer,
       score: parseInt(newQuestion.score) || 10
     };
 
-    console.log('Datos a enviar al backend:', questionData);
+    console.log('Agregando pregunta a la lista:', newQuestionData);
+    setQuestionsList([...questionsList, newQuestionData]);
 
+    // Limpiamos el formulario pero mantenemos la materia seleccionada
+    setNewQuestion({
+      subject: newQuestion.subject,
+      questionText: '',
+      correctAnswer: '',
+      score: 10
+    });
+  };
+
+  // Modificamos el handleSaveQuestions para asegurar el formato correcto
+  const handleSaveQuestions = async () => {
     try {
-      const response = await axiosInstance.post('/questions/create', questionData);
-      console.log('Respuesta:', response.data);
+      if (questionsList.length === 0) {
+        alert('Agregue al menos una pregunta');
+        return;
+      }
 
-      // Limpiar el formulario y cerrar modal
-      setShowQuestionModal(false);
-      setNewQuestion({
-        subject: '',
-        questionText: '',
-        correctAnswer: '',
-        score: 10
+      // Verificamos que todas las preguntas tengan los campos necesarios
+      const hasInvalidQuestions = questionsList.some(q => 
+        !q.subject || !q.question || !q.correctAnswer || !q.score
+      );
+
+      if (hasInvalidQuestions) {
+        alert('Todas las preguntas deben tener todos los campos completos');
+        return;
+      }
+
+      console.log('Preguntas a enviar:', questionsList);
+
+      const response = await axiosInstance.post('/questions/create', {
+        questions: questionsList.map(q => ({
+          subject: q.subject,
+          question: q.question,
+          correctAnswer: q.correctAnswer,
+          score: parseInt(q.score) || 10
+        }))
       });
 
-      alert('Pregunta creada exitosamente');
+      console.log('Respuesta del servidor:', response.data);
+      setQuestionsList([]); // Limpiamos la lista
+      setShowQuestionModal(false);
+      alert(`${questionsList.length} pregunta(s) creada(s) exitosamente`);
     } catch (error) {
       console.error('Error completo:', error);
       console.error('Datos del error:', error.response?.data);
-      alert('Error al crear la pregunta. Por favor verifica todos los campos.');
+      alert('Error al guardar las preguntas. Por favor verifica todos los campos.');
     }
+  };
+
+  // Función para eliminar una pregunta de la lista temporal
+  const handleRemoveQuestion = (index) => {
+    setQuestionsList(questionsList.filter((_, i) => i !== index));
   };
 
   const renderQuestionSelection = () => {
@@ -307,7 +340,7 @@ const Exams = () => {
       {showQuestionModal && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h2>Crear Nueva Pregunta</h2>
+            <h2>Crear Nuevas Preguntas</h2>
             <form onSubmit={handleCreateQuestion}>
               <div className="form-group">
                 <label>Materia:</label>
@@ -372,7 +405,7 @@ const Exams = () => {
               </div>
 
               <div className="modal-buttons">
-                <button type="submit">Guardar Pregunta</button>
+                <button type="submit">Agregar a la lista</button>
                 <button 
                   type="button" 
                   onClick={() => setShowQuestionModal(false)}
@@ -381,6 +414,36 @@ const Exams = () => {
                 </button>
               </div>
             </form>
+
+            {/* Lista de preguntas agregadas */}
+            {questionsList.length > 0 && (
+              <div className="questions-preview">
+                <h3>Preguntas por guardar ({questionsList.length})</h3>
+                <div className="questions-list">
+                  {questionsList.map((q, index) => (
+                    <div key={index} className="question-preview-item">
+                      <div>
+                        <strong>Pregunta {index + 1}:</strong> {q.question}
+                        <br />
+                        <small>Respuesta: {q.correctAnswer} | Puntaje: {q.score}</small>
+                      </div>
+                      <button 
+                        onClick={() => handleRemoveQuestion(index)}
+                        className="remove-question-btn"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button 
+                  onClick={handleSaveQuestions}
+                  className="save-all-btn"
+                >
+                  Guardar todas las preguntas
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -502,6 +565,52 @@ const styles = `
 .modal-buttons button[type="button"] {
   background-color: #f44336;
   color: white;
+}
+
+.questions-preview {
+  margin-top: 20px;
+  border-top: 1px solid #ddd;
+  padding-top: 20px;
+}
+
+.questions-list {
+  max-height: 300px;
+  overflow-y: auto;
+  margin: 10px 0;
+}
+
+.question-preview-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  padding: 10px;
+  border: 1px solid #ddd;
+  margin-bottom: 5px;
+  border-radius: 4px;
+}
+
+.remove-question-btn {
+  background: #ff4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.save-all-btn {
+  background: #4CAF50;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 10px;
 }
 `;
 

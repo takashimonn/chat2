@@ -18,32 +18,79 @@ const getQuestionsBySubject = async (req, res) => {
 
 const createQuestion = async (req, res) => {
   try {
-    const { subject, question, correctAnswer, score } = req.body;
-    console.log('Datos recibidos en el backend:', { subject, question, correctAnswer, score });
+    const { questions } = req.body;
+    console.log('Datos recibidos en el backend:', req.body); // Para debug
 
-    // Validar que el subject sea un ObjectId válido
-    if (!mongoose.Types.ObjectId.isValid(subject)) {
-      return res.status(400).json({
-        message: 'ID de materia inválido',
-        receivedSubject: subject
+    // Si recibimos un array de preguntas
+    if (Array.isArray(questions)) {
+      console.log('Procesando array de preguntas:', questions); // Para debug
+
+      // Validamos cada pregunta
+      for (const question of questions) {
+        if (!question.subject || !question.question || !question.correctAnswer || !question.score) {
+          return res.status(400).json({
+            message: 'Todos los campos son requeridos para cada pregunta',
+            invalidQuestion: question
+          });
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(question.subject)) {
+          return res.status(400).json({
+            message: 'ID de materia inválido',
+            receivedSubject: question.subject
+          });
+        }
+      }
+
+      // Creamos todas las preguntas
+      const savedQuestions = await Question.insertMany(questions.map(q => ({
+        subject: q.subject,
+        question: q.question,
+        correctAnswer: q.correctAnswer,
+        score: parseInt(q.score) || 10
+      })));
+
+      console.log('Preguntas guardadas:', savedQuestions); // Para debug
+      return res.status(201).json({
+        message: `${savedQuestions.length} preguntas creadas exitosamente`,
+        questions: savedQuestions
       });
+    } 
+    // Si recibimos una sola pregunta
+    else {
+      const { subject, question, correctAnswer, score } = req.body;
+      console.log('Procesando pregunta individual:', { subject, question, correctAnswer, score }); // Para debug
+
+      // Validación de campos requeridos
+      if (!subject || !question || !correctAnswer) {
+        return res.status(400).json({
+          message: 'Todos los campos son requeridos',
+          receivedData: { subject, question, correctAnswer, score }
+        });
+      }
+
+      if (!mongoose.Types.ObjectId.isValid(subject)) {
+        return res.status(400).json({
+          message: 'ID de materia inválido',
+          receivedSubject: subject
+        });
+      }
+
+      const newQuestion = new Question({
+        subject,
+        question,
+        correctAnswer,
+        score: parseInt(score) || 10
+      });
+
+      const savedQuestion = await newQuestion.save();
+      console.log('Pregunta guardada:', savedQuestion); // Para debug
+      return res.status(201).json(savedQuestion);
     }
-
-    const newQuestion = new Question({
-      subject,
-      question,
-      correctAnswer,
-      score: parseInt(score) || 10
-    });
-
-    const savedQuestion = await newQuestion.save();
-    console.log('Pregunta guardada:', savedQuestion);
-
-    res.status(201).json(savedQuestion);
   } catch (error) {
     console.error('Error detallado:', error);
     res.status(500).json({ 
-      message: 'Error al crear la pregunta',
+      message: 'Error al crear la(s) pregunta(s)',
       error: error.message
     });
   }
