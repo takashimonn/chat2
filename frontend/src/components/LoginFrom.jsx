@@ -176,6 +176,9 @@ const LoginForm = () => {
               <Link to="/register" className="register-link">
                 ¿No tienes una cuenta? Regístrate
               </Link>
+              <Link to="/forgot-password" className="forgot-password-link">
+                ¿Olvidaste tu contraseña?
+              </Link>
             </div>
           </form>
         </div>

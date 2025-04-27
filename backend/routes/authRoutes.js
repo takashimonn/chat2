@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { login, getUser } = require('../controllers/authController');
+const { login, getUser, forgotPassword, resetPassword } = require('../controllers/authController');
 const auth = require('../middleware/auth');
 const Session = require('../models/Session');
 const User = require('../models/User');
@@ -101,5 +101,9 @@ router.post('/check-session', async (req, res) => {
     res.status(500).json({ message: 'Error al verificar sesión' });
   }
 });
+
+// Rutas para recuperación de contraseña
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password/:token', resetPassword);
 
 module.exports = router;

@@ -162,17 +162,27 @@
 }
 
 .form-links {
-  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   text-align: center;
+  margin-top: 15px;
 }
 
-.register-link {
-  color: #9ca3af;
+.register-link,
+.forgot-password-link {
+  color: #4a90e2;
   text-decoration: none;
-  font-size: 14px;
+  font-size: 0.9rem;
   transition: color 0.3s ease;
 }
 
-.register-link:hover {
-  color: #6366f1;
+.register-link:hover,
+.forgot-password-link:hover {
+  color: #357abd;
+  text-decoration: underline;
+}
+
+.forgot-password-link {
+  color: #666;  /* Un color más sutil para distinguirlo del enlace de registro */
 }

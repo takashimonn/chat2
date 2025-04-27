@@ -3,6 +3,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const fetch = require('node-fetch');
 const Session = require('../models/Session');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 
 // Controlador para el registro de usuarios
 exports.register = async (req, res) => {
@@ -149,5 +151,107 @@ exports.logout = async (req, res) => {
   } catch (error) {
     console.error('Error en logout:', error);
     res.status(500).json({ message: 'Error al cerrar sesión' });
+  }
+};
+
+// Solicitar recuperación de contraseña
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ 
+        message: 'No existe una cuenta con ese correo electrónico' 
+      });
+    }
+
+    // Generar token único
+    const resetToken = crypto.randomBytes(20).toString('hex');
+    
+    // Guardar token y fecha de expiración (2 horas)
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = Date.now() + 7200000; // 2 horas
+    await user.save();
+
+    // Configurar el transporter de nodemailer
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    // URL del frontend para resetear la contraseña
+    const resetUrl = `http://localhost:3000/reset-password/${resetToken}`;
+
+    // Configurar el email
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: user.email,
+      subject: 'Recuperación de Contraseña - Control Escolar',
+      html: `
+        <h2>Recuperación de Contraseña</h2>
+        <p>Has solicitado restablecer tu contraseña.</p>
+        <p>Haz clic en el siguiente enlace para continuar:</p>
+        <a href="${resetUrl}">Restablecer Contraseña</a>
+        <p>Este enlace expirará en 2 horas.</p>
+        <p>Si no solicitaste esto, ignora este correo.</p>
+      `
+    };
+
+    // Enviar el email
+    await transporter.sendMail(mailOptions);
+
+    res.json({ 
+      message: 'Se ha enviado un enlace de recuperación a tu correo electrónico' 
+    });
+
+  } catch (error) {
+    console.error('Error en recuperación:', error);
+    res.status(500).json({ 
+      message: 'Error al procesar la solicitud de recuperación' 
+    });
+  }
+};
+
+// Restablecer contraseña con token
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    // Buscar usuario con token válido y no expirado
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ 
+        message: 'El enlace de recuperación es inválido o ha expirado' 
+      });
+    }
+
+    // Actualizar contraseña
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(password, salt);
+    
+    // Limpiar campos de recuperación
+    user.resetPasswordToken = null;
+    user.resetPasswordExpires = null;
+
+    await user.save();
+
+    res.json({ 
+      message: 'Contraseña actualizada exitosamente' 
+    });
+
+  } catch (error) {
+    console.error('Error al restablecer:', error);
+    res.status(500).json({ 
+      message: 'Error al restablecer la contraseña' 
+    });
   }
 };

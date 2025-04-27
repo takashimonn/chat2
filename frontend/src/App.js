@@ -8,6 +8,7 @@ import Chat from './pages/Chat';
 import Tasks from './pages/Tasks';
 import Exams from './pages/Exams';
 import StudentExams from './pages/StudentExams';
+import ForgotPassword from './pages/ForgotPassword';
 import { useEffect, useState } from 'react';
 import axiosInstance from './utils/axiosConfig';
 
@@ -57,6 +58,7 @@ function App() {
       <Routes>
         <Route path="/" element={<LoginForm />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route 
           path="/dashboard" 
           element={
