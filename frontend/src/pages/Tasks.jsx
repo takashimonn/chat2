@@ -422,8 +422,8 @@ const TeacherView = ({ initialTasks = [] }) => {
       setShowTaskModal(false);
       setNewTask({ title: "", description: "", dueDate: "", subject: "" });
 
-      // Actualizar las tareas con la nueva tarea
-      await fetchTasks();
+      // Agregar la nueva tarea al inicio de la lista
+      setTasks((prev) => [response.data, ...prev]);
 
       Swal.fire({
         icon: "success",
@@ -1175,7 +1175,11 @@ const Tasks = () => {
       <div className="contenedor">
         <div className="tasks-container">
           <h1 className="tasks-title">Tareas</h1>
-          {!isLoading && (
+          {isLoading ? (
+            <div className="custom-spinner-container">
+              <div className="custom-spinner"></div>
+            </div>
+          ) : (
             userRole === "maestro" ? (
               <TeacherView initialTasks={tasks} />
             ) : (
