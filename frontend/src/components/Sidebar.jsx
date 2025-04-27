@@ -1,9 +1,9 @@
-import { Link, useLocation } from 'react-router-dom';
-import '../styles/Sidebar.css';
-import Swal from 'sweetalert2';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import axiosInstance from '../utils/axiosConfig';
+import { Link, useLocation } from "react-router-dom";
+import "../styles/Sidebar.css";
+import Swal from "sweetalert2";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import axiosInstance from "../utils/axiosConfig";
 
 const Sidebar = () => {
   const location = useLocation();
@@ -11,34 +11,31 @@ const Sidebar = () => {
 
   const handleLogout = () => {
     Swal.fire({
-      title: '¿Estás seguro?',
+      title: "¿Estás seguro?",
       text: "¿Deseas cerrar la sesión?",
-      icon: 'warning',
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Sí, cerrar sesión',
-      cancelButtonText: 'Cancelar'
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Sí, cerrar sesión",
+      cancelButtonText: "Cancelar",
     }).then((result) => {
       if (result.isConfirmed) {
-        const email = localStorage.getItem('email');
-        axiosInstance.post('/auth/logout', { email })
+        const email = localStorage.getItem("email");
+        axiosInstance
+          .post("/auth/logout", { email })
           .then(() => {
             localStorage.clear();
-            navigate('/');
+            navigate("/");
             Swal.fire(
-              '¡Sesión cerrada!',
-              'Has cerrado sesión exitosamente',
-              'success'
+              "¡Sesión cerrada!",
+              "Has cerrado sesión exitosamente",
+              "success"
             );
           })
-          .catch(error => {
-            console.error('Error al cerrar sesión:', error);
-            Swal.fire(
-              'Error',
-              'No se pudo cerrar la sesión',
-              'error'
-            );
+          .catch((error) => {
+            console.error("Error al cerrar sesión:", error);
+            Swal.fire("Error", "No se pudo cerrar la sesión", "error");
           });
       }
     });
@@ -47,40 +44,48 @@ const Sidebar = () => {
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <h2>Control Escolar</h2>
+        <img src="/images/utd.webp" alt="Logo" className="sidebar-logo" />
+        <span>Control Escolar</span>
       </div>
       <nav className="sidebar-nav">
-        <Link 
-          to="/dashboard" 
-          className={`nav-item ${location.pathname === '/dashboard' ? 'active' : ''}`}
+        <Link
+          to="/dashboard"
+          className={`nav-item ${
+            location.pathname === "/dashboard" ? "active" : ""
+          }`}
         >
           <i className="fas fa-home"></i>
           <span>Inicio</span>
         </Link>
-        <Link 
-          to="/tareas" 
-          className={`nav-item ${location.pathname === '/tareas' ? 'active' : ''}`}
+        <Link
+          to="/tareas"
+          className={`nav-item ${
+            location.pathname === "/tareas" ? "active" : ""
+          }`}
         >
           <i className="fas fa-tasks"></i>
           <span>Tareas</span>
         </Link>
 
-        <Link 
-          to="/chat" 
-          className={`nav-item ${location.pathname === '/chat' ? 'active' : ''}`}
+        <Link
+          to="/chat"
+          className={`nav-item ${
+            location.pathname === "/chat" ? "active" : ""
+          }`}
         >
           <i className="fas fa-comments"></i>
           <span>Chat</span>
         </Link>
-        <Link 
-          to="/examenes" 
-          className={`nav-item ${location.pathname === '/examenes' ? 'active' : ''}`}
+        <Link
+          to="/examenes"
+          className={`nav-item ${
+            location.pathname === "/examenes" ? "active" : ""
+          }`}
         >
-          <i className="fas fa-tasks"></i>
+          <i className="fas fa-file-alt"></i>
           <span>Examenes</span>
-          </Link>
+        </Link>
       </nav>
-
 
       <div className="sidebar-footer">
         <button onClick={handleLogout} className="boton-logout">
@@ -92,4 +97,4 @@ const Sidebar = () => {
   );
 };
 
-export default Sidebar; 
+export default Sidebar;
