@@ -9,6 +9,7 @@ import Tasks from './pages/Tasks';
 import Exams from './pages/Exams';
 import StudentExams from './pages/StudentExams';
 import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import { useEffect, useState } from 'react';
 import axiosInstance from './utils/axiosConfig';
 
@@ -59,6 +60,7 @@ function App() {
         <Route path="/" element={<LoginForm />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route 
           path="/dashboard" 
           element={
