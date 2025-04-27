@@ -719,19 +719,6 @@ const TeacherView = ({ initialTasks = [] }) => {
       }
     });
 
-    const handleViewFile = (fileUrl) => {
-      if (fileUrl) {
-        const fullUrl = `http://localhost:4000${fileUrl}`;
-        window.open(fullUrl, "_blank");
-      } else {
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: "No hay archivo disponible para esta tarea",
-        });
-      }
-    };
-
     if (filteredTasks.length === 0) {
       return (
         <div className="no-tasks-message">
@@ -749,12 +736,17 @@ const TeacherView = ({ initialTasks = [] }) => {
             <th>Fecha de Entrega</th>
             <th>Estado</th>
             <th>Entregas</th>
-            <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
           {filteredTasks.map((task) => (
-            <tr key={task._id}>
+            <tr
+              key={task._id}
+              style={{ cursor: "pointer" }}
+              onClick={() =>
+                handleViewSubmissions(task, submissions[task._id] || [])
+              }
+            >
               <td>{task.title}</td>
               <td>{task.subject?.name || "No especificado"}</td>
               <td>{new Date(task.dueDate).toLocaleString()}</td>
@@ -764,22 +756,16 @@ const TeacherView = ({ initialTasks = [] }) => {
                   : "Sin entregas"}
               </td>
               <td>
-                <button
-                  className="action-button view-button"
-                  onClick={() =>
-                    handleViewSubmissions(task, submissions[task._id] || [])
-                  }
-                >
-                  <i className="fas fa-eye"></i> Ver Entregas
-                </button>
-              </td>
-              <td>
-                <button
-                  onClick={() => handleViewFile(task.fileUrl)}
-                  className="action-button view-button"
-                >
-                  <i className="fas fa-eye"></i> Ver Archivo
-                </button>
+                {/* Sin botones, solo el dato */}
+                {task.fileUrl ? (
+                  <span style={{ color: "#4a90e2" }}>
+                    Archivo adjunto
+                  </span>
+                ) : (
+                  <span style={{ color: "#aaa" }}>
+                    Sin archivo
+                  </span>
+                )}
               </td>
             </tr>
           ))}
@@ -1174,7 +1160,7 @@ const Tasks = () => {
     <div className="contenedor-principal">
       <div className="contenedor">
         <div className="tasks-container">
-          <h1 className="tasks-title">Tareas</h1>
+          <h1 className="tasks-titl e">Tareas</h1>
           {isLoading ? (
             <div className="custom-spinner-container">
               <div className="custom-spinner"></div>
