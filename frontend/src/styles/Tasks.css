@@ -154,6 +154,13 @@
   background-color: #2980b9;
 }
 
+.tasks-title {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #333;
+  margin-left: 1rem;
+}
+
 .submit-button i {
   font-size: 1.2rem;
 }
@@ -182,29 +189,46 @@
 /* Estilos para la tabla de tareas */
 .tasks-table-container {
   margin-top: 20px;
-  background: #1e1e1e;
-  border-radius: 8px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(44, 62, 80, 0.10), 0 1.5px 6px rgba(0,0,0,0.08);
   overflow: hidden;
-  opacity: 0;
-  animation: slideIn 0.5s ease-out forwards;
+  padding: 0;
+  animation: fadeIn 0.5s;
 }
 
 .tasks-table {
   width: 100%;
-  border-collapse: collapse;
-  color: #fff;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: #222;
+  background: #fff;
+}
+
+.tasks-table th, .tasks-table td {
+  padding: 16px 12px;
+  text-align: left;
 }
 
 .tasks-table th {
-  background: #2d2d2d;
-  padding: 12px;
-  text-align: left;
-  font-weight: 500;
+  background: #f4f6fb;
+  font-weight: 700;
+  color: #333;
+  border-bottom: 2px solid #e0e0e0;
+  font-size: 1.05rem;
+}
+
+.tasks-table tr {
+  transition: background 0.2s;
+}
+
+.tasks-table tr:hover {
+  background: #f0f7fa;
 }
 
 .tasks-table td {
-  padding: 12px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 1rem;
 }
 
 .status-indicator {
@@ -214,8 +238,8 @@
 }
 
 .status-dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
 }
 
@@ -231,71 +255,54 @@
   background-color: #f44336;
 }
 
-.table-actions {
-  display: flex;
-  gap: 8px;
-}
-
 .action-button {
-  background: none;
+  background: #e3f2fd;
+  color: #1976d2;
   border: none;
-  color: #fff;
+  padding: 7px 14px;
+  border-radius: 6px;
   cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-}
-
-.action-button:hover {
-  background: #333;
-}
-
-.table-pagination {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px;
-  background: #2d2d2d;
-  color: #fff;
-}
-
-.entries-select {
-  background: #1e1e1e;
-  color: #fff;
-  border: 1px solid #333;
-  padding: 4px;
-  border-radius: 4px;
-}
-
-.submit-task-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.file-upload-button {
-  background-color: #2196F3;
-  color: white;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.97rem;
+  transition: background 0.2s, color 0.2s;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
+.action-button:hover {
+  background: #1976d2;
+  color: #fff;
+}
+
+.file-upload-button {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 14px;
+  cursor: pointer;
+  font-size: 0.97rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.2s, color 0.2s;
+}
+
 .file-upload-button:hover {
-  background-color: #1976D2;
+  background-color: #1976d2;
+  color: #fff;
 }
 
 .submit-task-button {
   background-color: #4CAF50;
   color: white;
-  padding: 6px 12px;
+  padding: 7px 14px;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.97rem;
+  margin-left: 8px;
+  transition: background 0.2s;
 }
 
 .submit-task-button:disabled {
@@ -308,6 +315,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  font-weight: 600;
 }
 
 .task-submitted i {
@@ -546,6 +554,16 @@
   padding: 0.5rem;
   border: 1px solid #ddd;
   border-radius: 4px;
+}
+
+.contenedor-principal {
+  background-color: rgb(39, 38, 38); 
+  padding: 1rem;
+}
+
+.contenedor {
+  background-color: rgb(255, 255, 255);
+  border-radius: 2rem
 }
 
 .modal-buttons {
@@ -1149,4 +1167,15 @@
 .tasks-table tbody tr:nth-child(7) { animation-delay: 0.7s; }
 .tasks-table tbody tr:nth-child(8) { animation-delay: 0.8s; }
 .tasks-table tbody tr:nth-child(9) { animation-delay: 0.9s; }
-.tasks-table tbody tr:nth-child(10) { animation-delay: 1s; } 
+.tasks-table tbody tr:nth-child(10) { animation-delay: 1s; }
+
+@media (max-width: 700px) {
+  .tasks-table th, .tasks-table td {
+    padding: 10px 6px;
+    font-size: 0.95rem;
+  }
+  .tasks-table-container {
+    border-radius: 0;
+    box-shadow: none;
+  }
+} 
