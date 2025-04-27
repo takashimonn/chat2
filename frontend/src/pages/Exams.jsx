@@ -695,7 +695,15 @@ const Exams = () => {
     <div className="contenedor-principal">
       <div className="contenedor">
         <div className="exams-container">
-          <h1>Asignación de Exámenes</h1>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h1>Asignación de Exámenes</h1>
+            <button
+              className="add-question-button"
+              onClick={() => setShowQuestionModal(true)}
+            >
+              Agregar Nueva Pregunta
+            </button>
+          </div>
 
           {/* Selector de materia */}
           <div>
@@ -891,13 +899,6 @@ const Exams = () => {
               </div>
             </div>
           )}
-
-          <button
-            className="add-question-button"
-            onClick={() => setShowQuestionModal(true)}
-          >
-            Agregar Nueva Pregunta
-          </button>
 
           {/* Modal para crear preguntas */}
           {showQuestionModal && (
