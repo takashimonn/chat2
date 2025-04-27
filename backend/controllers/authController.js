@@ -234,14 +234,14 @@ exports.resetPassword = async (req, res) => {
       });
     }
 
-    // Actualizar contraseña
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(password, salt);
+    // Actualizar contraseña - NO hashear aquí, el middleware lo hará
+    user.password = password;
     
     // Limpiar campos de recuperación
     user.resetPasswordToken = null;
     user.resetPasswordExpires = null;
 
+    // Guardar cambios - el middleware hasheará la contraseña
     await user.save();
 
     res.json({ 
