@@ -1,7 +1,7 @@
 .sidebar {
   width: 250px;
   height: 100vh;
-  background: #222222;
+  background: rgb(39, 38, 38);
   color: #fff;
   transition: all 0.3s ease;
   position: fixed;

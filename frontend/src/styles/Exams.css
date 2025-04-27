@@ -8,6 +8,16 @@
   padding-top: 40px;
 }
 
+.contenedor-principal {
+  background-color: rgb(39, 38, 38); 
+  padding: 1rem;
+}
+
+.contenedor {
+  background-color: rgb(255, 255, 255);
+  border-radius: 2rem
+}
+
 .exam-main-card {
   background: #fff;
   border-radius: 18px;
