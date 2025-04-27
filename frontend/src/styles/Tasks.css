@@ -195,6 +195,8 @@
   overflow: hidden;
   padding: 0;
   animation: fadeIn 0.5s;
+  max-width: 1050px;
+  margin: 0 auto;
 }
 
 .tasks-table {
@@ -203,6 +205,7 @@
   border-spacing: 0;
   color: #222;
   background: #fff;
+  min-width: 500px;
 }
 
 .tasks-table th, .tasks-table td {
@@ -1230,4 +1233,27 @@
 @keyframes spin {
   0% { transform: rotate(0deg);}
   100% { transform: rotate(360deg);}
+}
+
+.tasks-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.buttons-container {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0;
+}
+
+.filter-container.filter-right {
+  margin: 0;
+  min-width: 220px;
+  justify-content: flex-end;
+  display: flex;
+  margin-right: 3rem;
 } 

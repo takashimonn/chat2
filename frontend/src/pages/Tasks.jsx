@@ -728,67 +728,69 @@ const TeacherView = ({ initialTasks = [] }) => {
     }
 
     return (
-      <table className="tasks-table">
-        <thead>
-          <tr>
-            <th>Título de la Tarea</th>
-            <th>Materia</th>
-            <th>Fecha de Entrega</th>
-            <th>Estado</th>
-            <th>Entregas</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredTasks.map((task) => (
-            <tr
-              key={task._id}
-              style={{ cursor: "pointer" }}
-              onClick={() =>
-                handleViewSubmissions(task, submissions[task._id] || [])
-              }
-            >
-              <td>{task.title}</td>
-              <td>{task.subject?.name || "No especificado"}</td>
-              <td>{new Date(task.dueDate).toLocaleString()}</td>
-              <td>
-                {submissions[task._id]?.length > 0
-                  ? `${submissions[task._id].length} entrega(s)`
-                  : "Sin entregas"}
-              </td>
-              <td>
-                {/* Sin botones, solo el dato */}
-                {task.fileUrl ? (
-                  <span style={{ color: "#4a90e2" }}>
-                    Archivo adjunto
-                  </span>
-                ) : (
-                  <span style={{ color: "#aaa" }}>
-                    Sin archivo
-                  </span>
-                )}
-              </td>
+      <div className="tasks-table-wrapper">
+        <table className="tasks-table">
+          <thead>
+            <tr>
+              <th>Título de la Tarea</th>
+              <th>Materia</th>
+              <th>Fecha de Entrega</th>
+              <th>Estado</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filteredTasks.map((task) => (
+              <tr
+                key={task._id}
+                style={{ cursor: "pointer" }}
+                onClick={() =>
+                  handleViewSubmissions(task, submissions[task._id] || [])
+                }
+              >
+                <td>{task.title}</td>
+                <td>{task.subject?.name || "No especificado"}</td>
+                <td>{new Date(task.dueDate).toLocaleString()}</td>
+                <td>
+                  {submissions[task._id]?.length > 0
+                    ? `${submissions[task._id].length} entrega(s)`
+                    : "Sin entregas"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     );
   };
 
   return (
     <div className="tasks-container">
-      <div className="buttons-container">
-        <button
-          className="create-button"
-          onClick={() => setShowTaskModal(true)}
-        >
-          <i className="fas fa-plus"></i> Asignar Nueva Tarea
-        </button>
-        <button
-          className="create-button"
-          onClick={() => setShowSubjectModal(true)}
-        >
-          <i className="fas fa-book"></i> Crear Nueva Materia
-        </button>
+      <div className="tasks-header-row">
+        <div className="buttons-container">
+          <button
+            className="create-button"
+            onClick={() => setShowTaskModal(true)}
+          >
+            <i className="fas fa-plus"></i> Asignar Nueva Tarea
+          </button>
+          <button
+            className="create-button"
+            onClick={() => setShowSubjectModal(true)}
+          >
+            <i className="fas fa-book"></i> Crear Nueva Materia
+          </button>
+        </div>
+        <div className="filter-container filter-right">
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="status-filter"
+          >
+            <option value="all">Todas las tareas</option>
+            <option value="pending">Sin entregas</option>
+            <option value="submitted">Con entregas</option>
+          </select>
+        </div>
       </div>
 
       {/* Modal para crear tarea */}
@@ -909,18 +911,6 @@ const TeacherView = ({ initialTasks = [] }) => {
           </div>
         </div>
       )}
-
-      <div className="filter-container">
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="status-filter"
-        >
-          <option value="all">Todas las tareas</option>
-          <option value="pending">Sin entregas</option>
-          <option value="submitted">Con entregas</option>
-        </select>
-      </div>
 
       <div className="tasks-table-container">
         {renderTaskTable()}
@@ -1160,7 +1150,7 @@ const Tasks = () => {
     <div className="contenedor-principal">
       <div className="contenedor">
         <div className="tasks-container">
-          <h1 className="tasks-titl e">Tareas</h1>
+          <h1 className="tasks-title">Tareas</h1>
           {isLoading ? (
             <div className="custom-spinner-container">
               <div className="custom-spinner"></div>
