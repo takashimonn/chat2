@@ -591,14 +591,17 @@ const Exams = () => {
                 <th>Correctas</th>
                 <th>Incorrectas</th>
                 <th>Calificación</th>
-                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {submittedExams.map(
                 (exam) =>
-                  exam.status === "completed" && ( // Verificación adicional por seguridad
-                    <tr key={exam._id}>
+                  exam.status === "completed" && (
+                    <tr
+                      key={exam._id}
+                      style={{ cursor: "pointer" }}
+                      onClick={() => handleReviewExam(exam._id)}
+                    >
                       <td>
                         {exam.student?.email?.split("@")[0] || "No disponible"}
                       </td>
@@ -606,14 +609,6 @@ const Exams = () => {
                       <td>{exam.correctAnswers}</td>
                       <td>{exam.incorrectAnswers}</td>
                       <td>{exam.calification}</td>
-                      <td>
-                        <button
-                          onClick={() => handleReviewExam(exam._id)}
-                          className="review-button"
-                        >
-                          Revisar
-                        </button>
-                      </td>
                     </tr>
                   )
               )}
