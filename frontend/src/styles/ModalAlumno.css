@@ -110,6 +110,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  padding: 0 24px;
 }
 
 .modal-form label {
@@ -119,18 +120,47 @@
   font-size: 0.95rem;
 }
 
-.modal-form input,
-.modal-form textarea,
-.modal-form select {
+.modal-form input {
   box-sizing: border-box;
   padding: 0.75rem;
-  border: 1px solid #b1b0b0;
-  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
   font-size: 1rem;
-  width: 95%;
-  max-width: 95%;
-  background-color: #fff;
+  width: 100%;
   transition: all 0.3s ease;
+}
+
+.modal-form input:focus {
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+}
+
+.modal-form button[type="submit"] {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 0.5rem;
+}
+
+.modal-form button[type="submit"]:hover {
+  background-color: #43a047;
+}
+
+.modal-form button[type="submit"]:active {
+  transform: translateY(1px);
+}
+
+.modal-form input:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
 }
 
 .modal-form textarea {
@@ -138,8 +168,17 @@
   resize: vertical;
 }
 
-.modal-form input:focus,
-.modal-form textarea:focus,
+.modal-form select {
+  box-sizing: border-box;
+  padding: 0.75rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 1rem;
+  width: 100%;
+  background-color: #fff;
+  transition: all 0.3s ease;
+}
+
 .modal-form select:focus {
   outline: none;
   border-color: #4CAF50;
