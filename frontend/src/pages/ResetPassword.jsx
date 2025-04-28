@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import axiosInstance from '../utils/axiosConfig';
+import '../styles/ResetPassword.css';
 
 const ResetPassword = () => {
   const [passwords, setPasswords] = useState({
@@ -58,19 +59,19 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <div className="login-form-section">
-          <div className="login-header">
+    <div className="reset-container">
+      <div className="reset-card">
+        <div className="reset-form-section">
+          <div className="reset-header">
             <h1>Restablecer Contraseña</h1>
             <p>Ingresa tu nueva contraseña</p>
           </div>
 
           <form onSubmit={handleSubmit}>
-            <div className="form-group">
+            <div className="reset-form-group">
               <label htmlFor="password">Nueva Contraseña</label>
-              <div className="input-group">
-                <span className="input-icon">
+              <div className="reset-input-group">
+                <span className="reset-input-icon">
                   <i className="fas fa-lock"></i>
                 </span>
                 <input
@@ -85,10 +86,10 @@ const ResetPassword = () => {
               </div>
             </div>
 
-            <div className="form-group">
+            <div className="reset-form-group">
               <label htmlFor="confirmPassword">Confirmar Contraseña</label>
-              <div className="input-group">
-                <span className="input-icon">
+              <div className="reset-input-group">
+                <span className="reset-input-icon">
                   <i className="fas fa-lock"></i>
                 </span>
                 <input
@@ -105,7 +106,7 @@ const ResetPassword = () => {
 
             <button 
               type="submit" 
-              className="login-button"
+              className="reset-button"
               disabled={loading}
             >
               {loading ? 'Procesando...' : 'Restablecer Contraseña'}
