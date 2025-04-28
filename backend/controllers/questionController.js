@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Question = require('../models/Question');
+const TeacherSubject = require('../models/TeacherSubject');
 
 const getQuestionsBySubject = async (req, res) => {
   try {
@@ -96,7 +97,27 @@ const createQuestion = async (req, res) => {
   }
 };
 
+// Obtener todas las preguntas de las materias que imparte el maestro autenticado
+const getQuestionsByTeacher = async (req, res) => {
+  try {
+    const teacherId = req.user._id;
+    // Buscar todas las asignaciones de materias del maestro
+    const teacherSubjects = await TeacherSubject.find({ teacher: teacherId });
+    const subjectIds = teacherSubjects.map(ts => ts.subject);
+    if (!subjectIds.length) {
+      return res.status(200).json([]);
+    }
+    // Buscar todas las preguntas de esas materias
+    const questions = await Question.find({ subject: { $in: subjectIds } }).populate('subject');
+    res.status(200).json(questions);
+  } catch (error) {
+    console.error('Error al obtener preguntas del maestro:', error);
+    res.status(500).json({ message: 'Error al obtener preguntas del maestro' });
+  }
+};
+
 module.exports = {
   getQuestionsBySubject,
-  createQuestion  // Asegúrate de exportar todos los métodos
+  createQuestion,
+  getQuestionsByTeacher
 }; 

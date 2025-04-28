@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
 const authMiddleware = async (req, res, next) => {
   try {
@@ -10,12 +11,12 @@ const authMiddleware = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log('Token decodificado en middleware:', decoded);
 
-    // Asignar la información del token
-    req.user = {
-      _id: decoded.id,        // Asegúrate que sea 'id' y no '_id'
-      role: decoded.role,
-      username: decoded.username
-    };
+    // Buscar el usuario completo en la base de datos
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(401).json({ message: 'Usuario no encontrado' });
+    }
+    req.user = user; // Aquí sí tendrá el campo subjects
 
     console.log('req.user establecido:', req.user);
     next();

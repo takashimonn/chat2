@@ -29,6 +29,10 @@ const Exams = () => {
   const [showQuestionSelection, setShowQuestionSelection] = useState(false);
   const [examToReview, setExamToReview] = useState(null);
   const [examAnswers, setExamAnswers] = useState([]);
+  const [showBankModal, setShowBankModal] = useState(false);
+  const [teacherQuestionsBank, setTeacherQuestionsBank] = useState([]);
+  const [selectedBankSubject, setSelectedBankSubject] = useState("");
+  const [filteredBankQuestions, setFilteredBankQuestions] = useState([]);
 
   useEffect(() => {
     const fetchSubjects = async () => {
@@ -115,6 +119,17 @@ const Exams = () => {
 
     fetchTeacherSubjects();
   }, []);
+
+  // Cuando cambia la materia seleccionada en el banco, filtra las preguntas
+  useEffect(() => {
+    if (selectedBankSubject && teacherQuestionsBank.length > 0) {
+      setFilteredBankQuestions(
+        teacherQuestionsBank.filter(q => q.subject && (q.subject._id === selectedBankSubject || q.subject === selectedBankSubject))
+      );
+    } else {
+      setFilteredBankQuestions([]);
+    }
+  }, [selectedBankSubject, teacherQuestionsBank]);
 
   const handleCreateExam = async () => {
     try {
@@ -691,18 +706,57 @@ const Exams = () => {
     );
   };
 
+  // Función para abrir el banco de preguntas
+  const handleOpenBankModal = async () => {
+    try {
+      // Puedes ajustar la ruta según tu backend
+      const response = await axiosInstance.get("/questions/teacher");
+      setTeacherQuestionsBank(response.data);
+      setShowBankModal(true);
+    } catch (error) {
+      console.error("Error al obtener el banco de preguntas:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "No se pudo cargar el banco de preguntas",
+      });
+    }
+  };
+
+  // En el modal del banco de preguntas, si hay materia seleccionada en el selector principal, mostrar las preguntas de esa materia (del estado 'questions')
+  const getBankQuestionsToShow = () => {
+    if (selectedSubject) {
+      // Si hay materia seleccionada, mostrar las preguntas de esa materia
+      return questions;
+    } else if (selectedBankSubject) {
+      // Si no, mostrar las filtradas por el selector del modal
+      return filteredBankQuestions;
+    } else {
+      return [];
+    }
+  };
+
   return (
     <div className="contenedor-principal">
       <div className="contenedor">
         <div className="exams-container">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h1>Asignación de Exámenes</h1>
-            <button
-              className="add-question-button"
-              onClick={() => setShowQuestionModal(true)}
-            >
-              Agregar Nueva Pregunta
-            </button>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button
+                className="add-question-button"
+                onClick={() => setShowQuestionModal(true)}
+              >
+                Agregar Nueva Pregunta
+              </button>
+              <button
+                className="add-question-button"
+                style={{ background: "#2196f3" }}
+                onClick={handleOpenBankModal}
+              >
+                Ver banco de preguntas
+              </button>
+            </div>
           </div>
 
           {/* Selector de materia */}
@@ -1033,6 +1087,48 @@ const Exams = () => {
                     </button>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Modal para banco de preguntas */}
+          {showBankModal && (
+            <div className="modal-overlay">
+              <div className="modal-content">
+                <h2>Banco de Preguntas del Maestro</h2>
+                <div className="form-group">
+                  <label>Materia:</label>
+                  <select
+                    value={selectedSubject || selectedBankSubject}
+                    onChange={e => {
+                      if (selectedSubject) return; // Si ya hay materia seleccionada principal, no permitir cambiar
+                      setSelectedBankSubject(e.target.value);
+                    }}
+                    disabled={!!selectedSubject}
+                  >
+                    <option value="">Seleccione una materia</option>
+                    {teacherSubjects.map((subject) => (
+                      <option key={subject.id} value={subject.id}>{subject.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="questions-list">
+                  {(selectedSubject || selectedBankSubject) && getBankQuestionsToShow().length === 0 && (
+                    <p>No hay preguntas registradas para esta materia.</p>
+                  )}
+                  {getBankQuestionsToShow().map((q, idx) => (
+                    <div key={q._id || idx} className="question-item">
+                      <div>
+                        <b>Pregunta:</b> {q.question}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="modal-buttons">
+                  <button type="button" onClick={() => { setShowBankModal(false); setSelectedBankSubject(""); }}>
+                    Cerrar
+                  </button>
+                </div>
               </div>
             </div>
           )}
