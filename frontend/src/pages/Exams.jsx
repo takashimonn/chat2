@@ -723,13 +723,10 @@ const Exams = () => {
     }
   };
 
-  // En el modal del banco de preguntas, si hay materia seleccionada en el selector principal, mostrar las preguntas de esa materia (del estado 'questions')
   const getBankQuestionsToShow = () => {
     if (selectedSubject) {
-      // Si hay materia seleccionada, mostrar las preguntas de esa materia
       return questions;
     } else if (selectedBankSubject) {
-      // Si no, mostrar las filtradas por el selector del modal
       return filteredBankQuestions;
     } else {
       return [];

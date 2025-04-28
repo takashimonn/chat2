@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import '../styles/ForgotPassword.css';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -35,55 +36,49 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Recuperar contraseña
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña
-          </p>
-        </div>
-        
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="email" className="sr-only">Correo electrónico</label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Correo electrónico"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
+    <div className="forgot-container">
+      <div className="forgot-image-section">
+        <img src="/images/Forgot_password.png" alt="Recuperar contraseña" />
+      </div>
+      <div className="forgot-form-section">
+        <div className="forgot-card">
+          <div className="forgot-header">
+            <h1>Recuperar contraseña</h1>
+            <p>Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña</p>
           </div>
 
-          <div>
+          <form onSubmit={handleSubmit} style={{ width: '100%' }}>
+            <div className="forgot-form-group">
+              <label htmlFor="email">Correo electrónico</label>
+              <div className="forgot-input-group">
+                <span className="forgot-input-icon">
+                  <i className="fas fa-envelope"></i>
+                </span>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Correo electrónico"
+                />
+              </div>
+            </div>
+
             <button
               type="submit"
+              className="forgot-button"
               disabled={loading}
-              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
-                loading ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'
-              } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
             >
               {loading ? 'Enviando...' : 'Enviar enlace de recuperación'}
             </button>
-          </div>
+          </form>
 
-          <div className="text-center mt-4">
-            <Link
-              to="/"
-              className="font-medium text-blue-600 hover:text-blue-500"
-            >
-              Volver al inicio de sesión
-            </Link>
+          <div className="forgot-link">
+            <Link to="/">Volver al inicio de sesión</Link>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
