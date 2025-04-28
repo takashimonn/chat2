@@ -1,52 +1,65 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/ModalAlumno.css';
 import Swal from 'sweetalert2';
+import axios from 'axios';
+
+const axiosInstance = axios.create({
+  baseURL: 'http://localhost:4000',
+  headers: {
+    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+    'Content-Type': 'application/json'
+  }
+});
 
 const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) => {
   const [form, setForm] = useState({ email: '', username: '', password: '' });
   const [alumnos, setAlumnos] = useState([]); // Lista de alumnos
-  const [materias, setMaterias] = useState([]); // Materias dinámicas
+  const [materias, setMaterias] = useState([]); // Materias del maestro
   const [search, setSearch] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
   const [selectedMateria, setSelectedMateria] = useState('Todas');
-  const [selectedCalificacion, setSelectedCalificacion] = useState('Todos');
-  const [selectedActivo, setSelectedActivo] = useState('Todos');
   const [filteredAlumnos, setFilteredAlumnos] = useState([]);
   const [selectedAlumno, setSelectedAlumno] = useState(null);
-  const [mainFilter, setMainFilter] = useState('Todos');
+  const [mainFilter, setMainFilter] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Cargar materias del maestro
+  useEffect(() => {
+    const fetchMaterias = async () => {
+      try {
+        const res = await axiosInstance.get('/api/subjects/teacher');
+        if (res.data) {
+          setMaterias([{ id: 'Todas', name: 'Todas' }, ...res.data]);
+        }
+      } catch (error) {
+        console.error('Error al cargar materias:', error);
+        Swal.fire({
+          title: 'Error',
+          text: 'Error al cargar las materias',
+          icon: 'error',
+          confirmButtonColor: '#e74c3c'
+        });
+      }
+    };
+
+    if (show) {
+      fetchMaterias();
+    }
+  }, [show]);
 
   // Cargar alumnos desde el backend
   useEffect(() => {
     const fetchAlumnos = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem('token');
-        const res = await fetch('http://localhost:4000/api/users/alumnos', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        const data = await res.json();
-        if (res.ok) {
-          setAlumnos(data);
-          // Extraer materias únicas de todos los alumnos
-          const materiasUnicas = ['Todas', ...new Set(data.flatMap(a => a.materias))];
-          setMaterias(materiasUnicas);
-        } else {
-          Swal.fire({
-            title: 'Error',
-            text: 'Error al cargar los alumnos',
-            icon: 'error',
-            confirmButtonColor: '#e74c3c'
-          });
+        const res = await axiosInstance.get('/api/users/alumnos');
+        if (res.data) {
+          setAlumnos(res.data);
         }
       } catch (error) {
         console.error('Error al cargar alumnos:', error);
         Swal.fire({
           title: 'Error',
-          text: 'Error de conexión al cargar los alumnos',
+          text: 'Error al cargar los alumnos',
           icon: 'error',
           confirmButtonColor: '#e74c3c'
         });
@@ -65,46 +78,41 @@ const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) =
     'Todos',
     'Aprobados',
     'Reprobados',
-    'Por materias'
+    'Sin calificación'
   ];
 
   // Filtrado en tiempo real
   useEffect(() => {
-    let result = [];
-    
-    // Solo aplicar filtros si se ha seleccionado alguno o hay búsqueda
-    if (mainFilter !== '' || search) {
-      result = alumnos;
+    let result = alumnos;
 
-      // Si hay texto en el buscador, filtrar por búsqueda
-      if (search) {
-        result = result.filter(a =>
-          a.email.toLowerCase().includes(search.toLowerCase()) ||
-          a.username.toLowerCase().includes(search.toLowerCase())
-        );
-      }
+    // Si hay texto en el buscador, filtrar por búsqueda
+    if (search) {
+      result = result.filter(a =>
+        a.email.toLowerCase().includes(search.toLowerCase()) ||
+        a.username.toLowerCase().includes(search.toLowerCase())
+      );
+    }
 
-      // Aplicar filtros según la selección
-      switch(mainFilter) {
-        case 'Todos':
-          // No aplicar ningún filtro adicional
-          break;
-        case 'Aprobados':
-          result = result.filter(a => a.promedio !== null && a.promedio >= 60);
-          break;
-        case 'Reprobados':
-          result = result.filter(a => a.promedio !== null && a.promedio < 60);
-          break;
-        case 'Por materias':
-          if (selectedMateria !== 'Todas') {
-            result = result.filter(a => a.materias.includes(selectedMateria));
-          }
-          break;
-      }
+    // Aplicar filtros según la selección
+    switch(mainFilter) {
+      case 'Todos':
+        // No aplicar ningún filtro adicional
+        break;
+      case 'Aprobados':
+        result = result.filter(a => a.promedio !== null && a.promedio >= 60);
+        break;
+      case 'Reprobados':
+        result = result.filter(a => a.promedio !== null && a.promedio < 60);
+        break;
+      case 'Sin calificación':
+        result = result.filter(a => a.promedio === null);
+        break;
+      default:
+        break;
     }
 
     setFilteredAlumnos(result);
-  }, [search, alumnos, mainFilter, selectedMateria]);
+  }, [search, alumnos, mainFilter]);
 
   useEffect(() => {
     if (feedback) {
@@ -178,16 +186,6 @@ const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) =
               <option value="">Seleccionar filtro...</option>
               {mainFilterOptions.map(opt => <option key={opt}>{opt}</option>)}
             </select>
-            {mainFilter === 'Por materias' && (
-              <select
-                className="alumno-filter-select"
-                value={selectedMateria}
-                onChange={e => setSelectedMateria(e.target.value)}
-                style={{ height: 32, borderRadius: 6, border: '1px solid #b1b0b0', padding: '0 8px' }}
-              >
-                {materias.map(m => <option key={m}>{m}</option>)}
-              </select>
-            )}
             <button className="modal-close-btn" onClick={onClose}>&times;</button>
           </div>
         </div>
@@ -209,14 +207,12 @@ const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) =
                   <span className="alumno-email">({a.email})</span>
                 </div>
                 <div className="alumno-stats">
-                  <span className={`alumno-promedio ${a.promedio >= 60 ? 'aprobado' : 'reprobado'}`}>
+                  <span className={`alumno-promedio ${
+                    a.promedio === null ? 'sin-calificacion' : 
+                    a.promedio >= 60 ? 'aprobado' : 'reprobado'
+                  }`}>
                     Promedio: {a.promedio || 'Sin calificaciones'}
                   </span>
-                  {a.materias.length > 0 && (
-                    <span className="alumno-materias">
-                      Materias: {a.materias.join(', ')}
-                    </span>
-                  )}
                 </div>
               </div>
             ))}
