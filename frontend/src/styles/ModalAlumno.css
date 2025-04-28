@@ -1,4 +1,4 @@
-.modal-alumno-overlay {
+.modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -6,72 +6,176 @@
   height: 100vh;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   z-index: 1000;
 }
 
-.modal-alumno {
-  background: #fff;
-  padding: 2rem 2.5rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
-  min-width: 320px;
-  max-width: 90vw;
+.modal-container {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
   position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
 }
 
-.close-btn {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-title {
+  color: #333;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.modal-close-btn {
   background: none;
   border: none;
-  font-size: 1.5rem;
+  font-size: 24px;
   cursor: pointer;
-  color: #888;
-  transition: color 0.2s;
-}
-.close-btn:hover {
-  color: #e74c3c;
+  color: #666;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
 }
 
-.modal-alumno-form {
+.modal-close-btn:hover {
+  color: #e74c3c;
+  background: rgba(231, 76, 60, 0.1);
+}
+
+.modal-form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  margin-top: 1rem;
+  gap: 1.5rem;
 }
 
-.modal-alumno-form label {
+.modal-form label {
+  color: #666;
   font-weight: 500;
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
 }
 
-.modal-alumno-form input {
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
+.modal-form input,
+.modal-form textarea,
+.modal-form select {
+  box-sizing: border-box;
+  padding: 0.75rem;
+  border: 1px solid #b1b0b0;
+  border-radius: 4px;
   font-size: 1rem;
+  width: 95%;
+  max-width: 95%;
+  background-color: #fff;
+  transition: all 0.3s ease;
 }
 
-.modal-alumno-form button[type="submit"] {
-  background: #007bff;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 0.7rem;
-  font-size: 1rem;
-  font-weight: 600;
+.modal-form textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.modal-form input:focus,
+.modal-form textarea:focus,
+.modal-form select:focus {
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.modal-buttons button {
+  padding: 8px 16px;
+  border-radius: 4px;
   cursor: pointer;
-  margin-top: 0.5rem;
-  transition: background 0.2s;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  width: 95%;
+  min-width: unset;
+  max-width: 95%;
+  display: block;
 }
-.modal-alumno-form button[type="submit"]:hover {
-  background: #0056b3;
+
+.modal-buttons button[type="submit"] {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  width: 95%;
+  max-width: 95%;
+  min-width: unset;
+  height: 44px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.modal-buttons button[type="button"] {
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  color: #333;
+}
+
+.modal-buttons button[type="submit"]:hover {
+  background-color: #45a049;
+}
+
+.modal-buttons button[type="button"]:hover {
+  background-color: #e0e0e0;
+}
+
+/* Estilos específicos para diferentes tipos de modales */
+.modal-alumno .modal-title {
+  color: #111;
+}
+
+.modal-tarea .modal-title {
+  color: #4CAF50;
+}
+
+.modal-materia .modal-title {
+  color: #9b59b6;
+}
+
+.modal-alumno button[type="submit"] {
+  background: #4CAF50;
+}
+
+.modal-tarea button[type="submit"] {
+  background: #4CAF50;
+}
+
+.modal-materia button[type="submit"] {
+  background: #9b59b6;
+}
+
+.modal-alumno button[type="submit"]:hover {
+  background: #45a049;
+}
+
+.modal-materia button[type="submit"]:hover {
+  background: #8e44ad;
 }
 
 .modal-alumno-feedback {
@@ -79,4 +183,13 @@
   color: #e74c3c;
   font-weight: 500;
   text-align: center;
+}
+
+.modal-form input[name="email"],
+.modal-form input[name="username"],
+.modal-form input[name="password"] {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: left;
 } 
