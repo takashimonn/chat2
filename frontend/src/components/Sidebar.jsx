@@ -85,6 +85,15 @@ const Sidebar = () => {
           <i className="fas fa-file-alt"></i>
           <span>Examenes</span>
         </Link>
+        <Link
+          to="/alumnos"
+          className={`nav-item ${
+            location.pathname === "/alumnos" ? "active" : ""
+          }`}
+        >
+          <i className="fas fa-users"></i>
+          <span>Alumnos</span>
+        </Link>
       </nav>
 
       <div className="sidebar-footer">

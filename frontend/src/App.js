@@ -10,6 +10,7 @@ import Exams from './pages/Exams';
 import StudentExams from './pages/StudentExams';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import Alumnos from './pages/Alumnos';
 import { useEffect, useState } from 'react';
 import axiosInstance from './utils/axiosConfig';
 
@@ -98,6 +99,14 @@ function App() {
           element={
             <ProtectedRoute>
               {localStorage.getItem('userRole') === 'maestro' ? <Exams /> : <StudentExams />}
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/alumnos" 
+          element={
+            <ProtectedRoute>
+              <Alumnos />
             </ProtectedRoute>
           } 
         />
