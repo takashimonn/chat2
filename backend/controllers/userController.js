@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Messages = require('../models/Message');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const Submission = require('../models/Submission');
 
 const userController = {
   // Registrar un nuevo usuario
@@ -106,6 +107,37 @@ const userController = {
     } catch (error) {
       console.error('Error al obtener usuarios:', error);
       res.status(500).json({ message: 'Error al obtener usuarios' });
+    }
+  },
+
+  getAlumnos: async (req, res) => {
+    try {
+      // Obtener todos los alumnos
+      const alumnos = await User.find({ role: 'alumno' })
+        .populate('subjects', 'name');
+
+      // Para cada alumno, calcular el promedio de calificaciones
+      const alumnosConCalificaciones = await Promise.all(alumnos.map(async (alumno) => {
+        // Buscar todas las entregas del alumno
+        const entregas = await Submission.find({ student: alumno._id, grade: { $ne: null } });
+        let promedio = null;
+        if (entregas.length > 0) {
+          const suma = entregas.reduce((acc, ent) => acc + (ent.grade || 0), 0);
+          promedio = Math.round(suma / entregas.length);
+        }
+        return {
+          id: alumno._id,
+          email: alumno.email,
+          username: alumno.username,
+          materias: alumno.subjects.map(s => s.name),
+          promedio
+        };
+      }));
+
+      res.json(alumnosConCalificaciones);
+    } catch (error) {
+      console.error('Error al obtener alumnos:', error);
+      res.status(500).json({ message: 'Error al obtener alumnos' });
     }
   }
 };

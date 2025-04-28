@@ -192,4 +192,26 @@
   margin-left: auto;
   margin-right: auto;
   text-align: left;
+}
+
+.filter-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 1rem;
+}
+.filter-btn:hover {
+  background: #e0e0e0;
+}
+
+.alumno-search-bar {
+  border-radius: 6px;
+  border: 1px solid #b1b0b0;
+  height: 25px;
 } 
