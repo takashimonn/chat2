@@ -2,32 +2,65 @@ import React, { useState, useEffect } from 'react';
 import '../styles/ModalAlumno.css';
 import Swal from 'sweetalert2';
 
-// Icono de filtro simple (puedes reemplazarlo por uno de librería si tienes)
-const FilterIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="2" y2="2"/><line x1="2" y1="2" x2="10" y2="12"/><line x1="10" y1="12" x2="10" y2="19"/><line x1="14" y1="19" x2="14" y2="12"/><line x1="14" y1="12" x2="22" y2="2"/></svg>
-);
-
-const mockAlumnos = [
-  { id: 1, email: 'juan@mail.com', username: 'juanito', calificacion: 85, materias: ['Matemáticas', 'Historia'] },
-  { id: 2, email: 'ana@mail.com', username: 'anita', calificacion: 78, materias: ['Español', 'Historia'] },
-  { id: 3, email: 'luis@mail.com', username: 'lucho', calificacion: 92, materias: ['Matemáticas', 'Ciencias'] },
-];
-const mockMaterias = ['Todas', 'Matemáticas', 'Historia', 'Español', 'Ciencias'];
-
 const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) => {
   const [form, setForm] = useState({ email: '', username: '', password: '' });
   const [alumnos, setAlumnos] = useState([]); // Lista de alumnos
+  const [materias, setMaterias] = useState([]); // Materias dinámicas
   const [search, setSearch] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedMateria, setSelectedMateria] = useState('Todas');
   const [selectedCalificacion, setSelectedCalificacion] = useState('Todos');
+  const [selectedActivo, setSelectedActivo] = useState('Todos');
   const [filteredAlumnos, setFilteredAlumnos] = useState([]);
   const [selectedAlumno, setSelectedAlumno] = useState(null);
+  const [mainFilter, setMainFilter] = useState('Todos');
+  const [loading, setLoading] = useState(false);
 
-  // Simulación: cargar alumnos (reemplaza por fetch real)
+  // Cargar alumnos desde el backend
   useEffect(() => {
-    setAlumnos(mockAlumnos);
-  }, []);
+    const fetchAlumnos = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch('http://localhost:4000/api/users/alumnos');
+        const data = await res.json();
+        if (res.ok) {
+          setAlumnos(data);
+          // Extraer materias únicas de todos los alumnos
+          const materiasUnicas = ['Todas', ...new Set(data.flatMap(a => a.materias))];
+          setMaterias(materiasUnicas);
+        } else {
+          Swal.fire({
+            title: 'Error',
+            text: 'Error al cargar los alumnos',
+            icon: 'error',
+            confirmButtonColor: '#e74c3c'
+          });
+        }
+      } catch (error) {
+        console.error('Error al cargar alumnos:', error);
+        Swal.fire({
+          title: 'Error',
+          text: 'Error de conexión al cargar los alumnos',
+          icon: 'error',
+          confirmButtonColor: '#e74c3c'
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (show) {
+      fetchAlumnos();
+    }
+  }, [show]);
+
+  // Nuevo: opciones principales de filtro
+  const mainFilterOptions = [
+    'Todos',
+    'Alumnos activos',
+    'Por materias',
+    'Por promedio'
+  ];
 
   // Filtrado en tiempo real
   useEffect(() => {
@@ -35,16 +68,22 @@ const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) =
       a.email.toLowerCase().includes(search.toLowerCase()) ||
       a.username.toLowerCase().includes(search.toLowerCase())
     );
-    if (selectedMateria !== 'Todas') {
+
+    if (mainFilter === 'Alumnos activos') {
+      result = result.filter(a => a.activo !== false);
+    }
+    if (mainFilter === 'Por materias' && selectedMateria !== 'Todas') {
       result = result.filter(a => a.materias.includes(selectedMateria));
     }
-    if (selectedCalificacion === 'Aprobados') {
-      result = result.filter(a => a.calificacion >= 60);
-    } else if (selectedCalificacion === 'Mayor80') {
-      result = result.filter(a => a.calificacion > 80);
+    if (mainFilter === 'Por promedio') {
+      if (selectedCalificacion === 'Aprobados') {
+        result = result.filter(a => a.promedio >= 60);
+      } else if (selectedCalificacion === 'Mayor80') {
+        result = result.filter(a => a.promedio > 80);
+      }
     }
     setFilteredAlumnos(result);
-  }, [search, alumnos, selectedMateria, selectedCalificacion]);
+  }, [search, alumnos, mainFilter, selectedMateria, selectedCalificacion]);
 
   useEffect(() => {
     if (feedback) {
@@ -109,43 +148,55 @@ const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) =
               onChange={e => setSearch(e.target.value)}
               style={{ width: 180, marginRight: 4 }}
             />
-            <div className="filter-dropdown-container">
-              <button type="button" className="filter-btn" onClick={() => setShowFilters(f => !f)}>
-                <FilterIcon />
-              </button>
-              {showFilters && (
-                <div className="filter-dropdown">
-                  <div>
-                    <label>Materia:</label>
-                    <select value={selectedMateria} onChange={e => setSelectedMateria(e.target.value)}>
-                      {mockMaterias.map(m => <option key={m}>{m}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label>Calificación:</label>
-                    <select value={selectedCalificacion} onChange={e => setSelectedCalificacion(e.target.value)}>
-                      <option value="Todos">Todos</option>
-                      <option value="Aprobados">Aprobados</option>
-                      <option value="Mayor80">Mayor a 80</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-            </div>
+            <select
+              className="alumno-filter-select"
+              value={mainFilter}
+              onChange={e => setMainFilter(e.target.value)}
+              style={{ height: 32, borderRadius: 6, border: '1px solid #b1b0b0', padding: '0 8px', minWidth: 140 }}
+            >
+              {mainFilterOptions.map(opt => <option key={opt}>{opt}</option>)}
+            </select>
+            {/* Filtros condicionales */}
+            {mainFilter === 'Por materias' && (
+              <select
+                className="alumno-filter-select"
+                value={selectedMateria}
+                onChange={e => setSelectedMateria(e.target.value)}
+                style={{ height: 32, borderRadius: 6, border: '1px solid #b1b0b0', padding: '0 8px' }}
+              >
+                {materias.map(m => <option key={m}>{m}</option>)}
+              </select>
+            )}
+            {mainFilter === 'Por promedio' && (
+              <select
+                className="alumno-filter-select"
+                value={selectedCalificacion}
+                onChange={e => setSelectedCalificacion(e.target.value)}
+                style={{ height: 32, borderRadius: 6, border: '1px solid #b1b0b0', padding: '0 8px' }}
+              >
+                <option value="Todos">Todos</option>
+                <option value="Aprobados">Aprobados</option>
+                <option value="Mayor80">Mayor a 80</option>
+              </select>
+            )}
             <button className="modal-close-btn" onClick={onClose}>&times;</button>
           </div>
         </div>
         {/* Lista de alumnos filtrados */}
-        {search && filteredAlumnos.length > 0 && (
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '20px' }}>
+            <p>Cargando alumnos...</p>
+          </div>
+        ) : search && filteredAlumnos.length > 0 ? (
           <div className="alumnos-lista-filtrada">
             {filteredAlumnos.map(a => (
               <div key={a.id} className="alumno-item-filtrado" onClick={() => handleSelectAlumno(a)}>
                 <span>{a.username} ({a.email})</span>
-                <span style={{ fontSize: 12, color: '#888' }}>Calif: {a.calificacion}</span>
+                <span style={{ fontSize: 12, color: '#888' }}>Promedio: {a.promedio || 'Sin calificaciones'}</span>
               </div>
             ))}
           </div>
-        )}
+        ) : null}
         <form onSubmit={handleSubmit} className="modal-form">
           <label>Email</label>
           <input type="email" name="email" value={form.email} onChange={handleChange} required disabled={!!selectedAlumno} />
