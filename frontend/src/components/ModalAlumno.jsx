@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import '../styles/ModalAlumno.css';
 import Swal from 'sweetalert2';
 import axios from 'axios';
@@ -22,6 +22,28 @@ const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) =
   const [mainFilter, setMainFilter] = useState('');
   const [loading, setLoading] = useState(false);
   const [showResultados, setShowResultados] = useState(false);
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const filterRef = useRef(null);
+
+  // Opciones principales de filtro
+  const mainFilterOptions = [
+    { id: 'todos', label: 'Todos los alumnos' },
+    { id: 'aprobados', label: 'Alumnos aprobados' },
+    { id: 'reprobados', label: 'Alumnos reprobados' },
+    { id: 'sin-calificacion', label: 'Sin calificación' }
+  ];
+
+  // Cerrar el dropdown cuando se hace clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (filterRef.current && !filterRef.current.contains(event.target)) {
+        setShowFilterDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Cargar materias del maestro
   useEffect(() => {
@@ -73,14 +95,6 @@ const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) =
       fetchAlumnos();
     }
   }, [show]);
-
-  // Opciones principales de filtro
-  const mainFilterOptions = [
-    'Seleccione un filtro',
-    'Aprobados',
-    'Reprobados',
-    'Sin calificación'
-  ];
 
   // Filtrado en tiempo real
   useEffect(() => {
@@ -182,12 +196,31 @@ const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) =
     return 'Resultados de la búsqueda';
   };
 
+  const handleFilterClick = (filterId) => {
+    let filterValue = '';
+    switch(filterId) {
+      case 'aprobados':
+        filterValue = 'Aprobados';
+        break;
+      case 'reprobados':
+        filterValue = 'Reprobados';
+        break;
+      case 'sin-calificacion':
+        filterValue = 'Sin calificación';
+        break;
+      default:
+        filterValue = '';
+    }
+    setMainFilter(filterValue);
+    setShowFilterDropdown(false);
+  };
+
   return (
     <div className="modal-overlay">
       <div className={`modal-container modal-${type}`}>
         <div className="modal-header">
           <h2 className="modal-title">{getTitle()}</h2>
-          <div className="modal-filter-container">
+          <div className="modal-filter-container" ref={filterRef}>
             <input
               type="text"
               className="alumno-search-bar"
@@ -195,16 +228,44 @@ const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) =
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
-            <select
-              className="alumno-filter-select"
-              value={mainFilter}
-              onChange={e => setMainFilter(e.target.value)}
+            <button 
+              className="filter-icon-button"
+              onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+              title="Filtrar alumnos"
             >
-              <option value="">Seleccione un filtro</option>
-              {mainFilterOptions.map(opt => 
-                opt !== 'Seleccione un filtro' && <option key={opt}>{opt}</option>
-              )}
-            </select>
+              <svg 
+                width="20" 
+                height="20" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              >
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+              </svg>
+            </button>
+            {showFilterDropdown && (
+              <div className="filter-dropdown">
+                {mainFilterOptions.map(option => (
+                  <div
+                    key={option.id}
+                    className={`filter-dropdown-item ${
+                      (option.id === 'todos' && !mainFilter) ||
+                      (option.id === 'aprobados' && mainFilter === 'Aprobados') ||
+                      (option.id === 'reprobados' && mainFilter === 'Reprobados') ||
+                      (option.id === 'sin-calificacion' && mainFilter === 'Sin calificación')
+                        ? 'active'
+                        : ''
+                    }`}
+                    onClick={() => handleFilterClick(option.id)}
+                  >
+                    {option.label}
+                  </div>
+                ))}
+              </div>
+            )}
             <button className="modal-close-btn" onClick={onClose}>&times;</button>
           </div>
         </div>
