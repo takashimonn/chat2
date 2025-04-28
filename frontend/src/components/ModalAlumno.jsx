@@ -70,32 +70,37 @@ const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) =
 
   // Filtrado en tiempo real
   useEffect(() => {
-    let result = alumnos;
+    let result = [];
+    
+    // Solo aplicar filtros si se ha seleccionado alguno o hay búsqueda
+    if (mainFilter !== '' || search) {
+      result = alumnos;
 
-    // Si hay texto en el buscador, filtrar por búsqueda
-    if (search) {
-      result = result.filter(a =>
-        a.email.toLowerCase().includes(search.toLowerCase()) ||
-        a.username.toLowerCase().includes(search.toLowerCase())
-      );
-    }
+      // Si hay texto en el buscador, filtrar por búsqueda
+      if (search) {
+        result = result.filter(a =>
+          a.email.toLowerCase().includes(search.toLowerCase()) ||
+          a.username.toLowerCase().includes(search.toLowerCase())
+        );
+      }
 
-    // Aplicar filtros según la selección
-    switch(mainFilter) {
-      case 'Todos':
-        // No aplicar ningún filtro adicional
-        break;
-      case 'Aprobados':
-        result = result.filter(a => a.promedio !== null && a.promedio >= 60);
-        break;
-      case 'Reprobados':
-        result = result.filter(a => a.promedio !== null && a.promedio < 60);
-        break;
-      case 'Por materias':
-        if (selectedMateria !== 'Todas') {
-          result = result.filter(a => a.materias.includes(selectedMateria));
-        }
-        break;
+      // Aplicar filtros según la selección
+      switch(mainFilter) {
+        case 'Todos':
+          // No aplicar ningún filtro adicional
+          break;
+        case 'Aprobados':
+          result = result.filter(a => a.promedio !== null && a.promedio >= 60);
+          break;
+        case 'Reprobados':
+          result = result.filter(a => a.promedio !== null && a.promedio < 60);
+          break;
+        case 'Por materias':
+          if (selectedMateria !== 'Todas') {
+            result = result.filter(a => a.materias.includes(selectedMateria));
+          }
+          break;
+      }
     }
 
     setFilteredAlumnos(result);
@@ -170,6 +175,7 @@ const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) =
               onChange={e => setMainFilter(e.target.value)}
               style={{ height: 32, borderRadius: 6, border: '1px solid #b1b0b0', padding: '0 8px', minWidth: 140 }}
             >
+              <option value="">Seleccionar filtro...</option>
               {mainFilterOptions.map(opt => <option key={opt}>{opt}</option>)}
             </select>
             {mainFilter === 'Por materias' && (
@@ -193,15 +199,35 @@ const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) =
         ) : filteredAlumnos.length > 0 ? (
           <div className="alumnos-lista-filtrada">
             {filteredAlumnos.map(a => (
-              <div key={a.id} className="alumno-item-filtrado" onClick={() => handleSelectAlumno(a)}>
-                <span>{a.username} ({a.email})</span>
-                <span style={{ fontSize: 12, color: '#888' }}>Promedio: {a.promedio || 'Sin calificaciones'}</span>
+              <div 
+                key={a.id} 
+                className="alumno-item-filtrado" 
+                onClick={() => handleSelectAlumno(a)}
+              >
+                <div className="alumno-info">
+                  <span className="alumno-nombre">{a.username}</span>
+                  <span className="alumno-email">({a.email})</span>
+                </div>
+                <div className="alumno-stats">
+                  <span className={`alumno-promedio ${a.promedio >= 60 ? 'aprobado' : 'reprobado'}`}>
+                    Promedio: {a.promedio || 'Sin calificaciones'}
+                  </span>
+                  {a.materias.length > 0 && (
+                    <span className="alumno-materias">
+                      Materias: {a.materias.join(', ')}
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
           </div>
-        ) : (
+        ) : mainFilter || search ? (
           <div style={{ textAlign: 'center', padding: '20px' }}>
             <p>No se encontraron alumnos</p>
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '20px' }}>
+            <p>Selecciona un filtro o busca un alumno</p>
           </div>
         )}
         <form onSubmit={handleSubmit} className="modal-form">
