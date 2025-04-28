@@ -21,7 +21,13 @@ const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) =
     const fetchAlumnos = async () => {
       try {
         setLoading(true);
-        const res = await fetch('http://localhost:4000/api/users/alumnos');
+        const token = localStorage.getItem('token');
+        const res = await fetch('http://localhost:4000/api/users/alumnos', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         const data = await res.json();
         if (res.ok) {
           setAlumnos(data);
@@ -64,24 +70,38 @@ const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) =
 
   // Filtrado en tiempo real
   useEffect(() => {
-    let result = alumnos.filter(a =>
-      a.email.toLowerCase().includes(search.toLowerCase()) ||
-      a.username.toLowerCase().includes(search.toLowerCase())
-    );
+    let result = alumnos;
 
-    if (mainFilter === 'Alumnos activos') {
-      result = result.filter(a => a.activo !== false);
+    // Si hay texto en el buscador, filtrar por búsqueda
+    if (search) {
+      result = result.filter(a =>
+        a.email.toLowerCase().includes(search.toLowerCase()) ||
+        a.username.toLowerCase().includes(search.toLowerCase())
+      );
     }
-    if (mainFilter === 'Por materias' && selectedMateria !== 'Todas') {
-      result = result.filter(a => a.materias.includes(selectedMateria));
+
+    // Aplicar filtros según la selección
+    switch(mainFilter) {
+      case 'Todos':
+        // No aplicar ningún filtro adicional
+        break;
+      case 'Alumnos activos':
+        // Por ahora todos los alumnos están activos
+        break;
+      case 'Por materias':
+        if (selectedMateria !== 'Todas') {
+          result = result.filter(a => a.materias.includes(selectedMateria));
+        }
+        break;
+      case 'Por promedio':
+        if (selectedCalificacion === 'Aprobados') {
+          result = result.filter(a => a.promedio !== null && a.promedio >= 60);
+        } else if (selectedCalificacion === 'Mayor80') {
+          result = result.filter(a => a.promedio !== null && a.promedio > 80);
+        }
+        break;
     }
-    if (mainFilter === 'Por promedio') {
-      if (selectedCalificacion === 'Aprobados') {
-        result = result.filter(a => a.promedio >= 60);
-      } else if (selectedCalificacion === 'Mayor80') {
-        result = result.filter(a => a.promedio > 80);
-      }
-    }
+
     setFilteredAlumnos(result);
   }, [search, alumnos, mainFilter, selectedMateria, selectedCalificacion]);
 
@@ -187,7 +207,7 @@ const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) =
           <div style={{ textAlign: 'center', padding: '20px' }}>
             <p>Cargando alumnos...</p>
           </div>
-        ) : search && filteredAlumnos.length > 0 ? (
+        ) : filteredAlumnos.length > 0 ? (
           <div className="alumnos-lista-filtrada">
             {filteredAlumnos.map(a => (
               <div key={a.id} className="alumno-item-filtrado" onClick={() => handleSelectAlumno(a)}>
@@ -196,7 +216,11 @@ const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) =
               </div>
             ))}
           </div>
-        ) : null}
+        ) : (
+          <div style={{ textAlign: 'center', padding: '20px' }}>
+            <p>No se encontraron alumnos</p>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="modal-form">
           <label>Email</label>
           <input type="email" name="email" value={form.email} onChange={handleChange} required disabled={!!selectedAlumno} />
