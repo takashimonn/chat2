@@ -60,12 +60,12 @@ const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) =
     }
   }, [show]);
 
-  // Nuevo: opciones principales de filtro
+  // Opciones principales de filtro
   const mainFilterOptions = [
     'Todos',
-    'Alumnos activos',
-    'Por materias',
-    'Por promedio'
+    'Aprobados',
+    'Reprobados',
+    'Por materias'
   ];
 
   // Filtrado en tiempo real
@@ -85,25 +85,21 @@ const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) =
       case 'Todos':
         // No aplicar ningún filtro adicional
         break;
-      case 'Alumnos activos':
-        // Por ahora todos los alumnos están activos
+      case 'Aprobados':
+        result = result.filter(a => a.promedio !== null && a.promedio >= 60);
+        break;
+      case 'Reprobados':
+        result = result.filter(a => a.promedio !== null && a.promedio < 60);
         break;
       case 'Por materias':
         if (selectedMateria !== 'Todas') {
           result = result.filter(a => a.materias.includes(selectedMateria));
         }
         break;
-      case 'Por promedio':
-        if (selectedCalificacion === 'Aprobados') {
-          result = result.filter(a => a.promedio !== null && a.promedio >= 60);
-        } else if (selectedCalificacion === 'Mayor80') {
-          result = result.filter(a => a.promedio !== null && a.promedio > 80);
-        }
-        break;
     }
 
     setFilteredAlumnos(result);
-  }, [search, alumnos, mainFilter, selectedMateria, selectedCalificacion]);
+  }, [search, alumnos, mainFilter, selectedMateria]);
 
   useEffect(() => {
     if (feedback) {
@@ -176,7 +172,6 @@ const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) =
             >
               {mainFilterOptions.map(opt => <option key={opt}>{opt}</option>)}
             </select>
-            {/* Filtros condicionales */}
             {mainFilter === 'Por materias' && (
               <select
                 className="alumno-filter-select"
@@ -185,18 +180,6 @@ const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) =
                 style={{ height: 32, borderRadius: 6, border: '1px solid #b1b0b0', padding: '0 8px' }}
               >
                 {materias.map(m => <option key={m}>{m}</option>)}
-              </select>
-            )}
-            {mainFilter === 'Por promedio' && (
-              <select
-                className="alumno-filter-select"
-                value={selectedCalificacion}
-                onChange={e => setSelectedCalificacion(e.target.value)}
-                style={{ height: 32, borderRadius: 6, border: '1px solid #b1b0b0', padding: '0 8px' }}
-              >
-                <option value="Todos">Todos</option>
-                <option value="Aprobados">Aprobados</option>
-                <option value="Mayor80">Mayor a 80</option>
               </select>
             )}
             <button className="modal-close-btn" onClick={onClose}>&times;</button>
