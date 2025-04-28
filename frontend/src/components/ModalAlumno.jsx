@@ -21,6 +21,7 @@ const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) =
   const [selectedAlumno, setSelectedAlumno] = useState(null);
   const [mainFilter, setMainFilter] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showResultados, setShowResultados] = useState(false);
 
   // Cargar materias del maestro
   useEffect(() => {
@@ -75,7 +76,7 @@ const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) =
 
   // Opciones principales de filtro
   const mainFilterOptions = [
-    'Todos',
+    'Seleccione un filtro',
     'Aprobados',
     'Reprobados',
     'Sin calificación'
@@ -83,32 +84,38 @@ const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) =
 
   // Filtrado en tiempo real
   useEffect(() => {
-    let result = alumnos;
+    let result = [];
 
-    // Si hay texto en el buscador, filtrar por búsqueda
-    if (search) {
-      result = result.filter(a =>
-        a.email.toLowerCase().includes(search.toLowerCase()) ||
-        a.username.toLowerCase().includes(search.toLowerCase())
-      );
-    }
+    if ((mainFilter && mainFilter !== 'Seleccione un filtro') || search) {
+      result = [...alumnos];
 
-    // Aplicar filtros según la selección
-    switch(mainFilter) {
-      case 'Todos':
-        // No aplicar ningún filtro adicional
-        break;
-      case 'Aprobados':
-        result = result.filter(a => a.promedio !== null && a.promedio >= 60);
-        break;
-      case 'Reprobados':
-        result = result.filter(a => a.promedio !== null && a.promedio < 60);
-        break;
-      case 'Sin calificación':
-        result = result.filter(a => a.promedio === null);
-        break;
-      default:
-        break;
+      if (search) {
+        result = result.filter(a =>
+          a.email.toLowerCase().includes(search.toLowerCase()) ||
+          a.username.toLowerCase().includes(search.toLowerCase())
+        );
+      }
+
+      switch(mainFilter) {
+        case 'Seleccione un filtro':
+          break;
+        case 'Aprobados':
+          result = result.filter(a => a.promedio !== null && a.promedio >= 60);
+          break;
+        case 'Reprobados':
+          result = result.filter(a => a.promedio !== null && a.promedio < 60);
+          break;
+        case 'Sin calificación':
+          result = result.filter(a => a.promedio === null);
+          break;
+        default:
+          break;
+      }
+      
+      // Mostrar la modal de resultados cuando hay filtros aplicados
+      setShowResultados(true);
+    } else {
+      setShowResultados(false);
     }
 
     setFilteredAlumnos(result);
@@ -161,71 +168,47 @@ const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) =
   const handleSelectAlumno = (alumno) => {
     setSelectedAlumno(alumno);
     setForm({ email: alumno.email, username: alumno.username, password: '' });
+    setShowResultados(false); // Cerrar la modal de resultados al seleccionar
+  };
+
+  const getFilterTitle = () => {
+    if (search && mainFilter && mainFilter !== 'Seleccione un filtro') {
+      return `Resultados para "${search}" - ${mainFilter}`;
+    } else if (search) {
+      return `Resultados para "${search}"`;
+    } else if (mainFilter && mainFilter !== 'Seleccione un filtro') {
+      return `Alumnos ${mainFilter.toLowerCase()}`;
+    }
+    return 'Resultados de la búsqueda';
   };
 
   return (
     <div className="modal-overlay">
       <div className={`modal-container modal-${type}`}>
-        <div className="modal-header" style={{ alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div className="modal-header">
           <h2 className="modal-title">{getTitle()}</h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
+          <div className="modal-filter-container">
             <input
               type="text"
               className="alumno-search-bar"
               placeholder="Buscar alumno..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              style={{ width: 180, marginRight: 4 }}
             />
             <select
               className="alumno-filter-select"
               value={mainFilter}
               onChange={e => setMainFilter(e.target.value)}
-              style={{ height: 32, borderRadius: 6, border: '1px solid #b1b0b0', padding: '0 8px', minWidth: 140 }}
             >
-              <option value="">Seleccionar filtro...</option>
-              {mainFilterOptions.map(opt => <option key={opt}>{opt}</option>)}
+              <option value="">Seleccione un filtro</option>
+              {mainFilterOptions.map(opt => 
+                opt !== 'Seleccione un filtro' && <option key={opt}>{opt}</option>
+              )}
             </select>
             <button className="modal-close-btn" onClick={onClose}>&times;</button>
           </div>
         </div>
-        {/* Lista de alumnos filtrados */}
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '20px' }}>
-            <p>Cargando alumnos...</p>
-          </div>
-        ) : filteredAlumnos.length > 0 ? (
-          <div className="alumnos-lista-filtrada">
-            {filteredAlumnos.map(a => (
-              <div 
-                key={a.id} 
-                className="alumno-item-filtrado" 
-                onClick={() => handleSelectAlumno(a)}
-              >
-                <div className="alumno-info">
-                  <span className="alumno-nombre">{a.username}</span>
-                  <span className="alumno-email">({a.email})</span>
-                </div>
-                <div className="alumno-stats">
-                  <span className={`alumno-promedio ${
-                    a.promedio === null ? 'sin-calificacion' : 
-                    a.promedio >= 60 ? 'aprobado' : 'reprobado'
-                  }`}>
-                    Promedio: {a.promedio || 'Sin calificaciones'}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : mainFilter || search ? (
-          <div style={{ textAlign: 'center', padding: '20px' }}>
-            <p>No se encontraron alumnos</p>
-          </div>
-        ) : (
-          <div style={{ textAlign: 'center', padding: '20px' }}>
-            <p>Selecciona un filtro o busca un alumno</p>
-          </div>
-        )}
+
         <form onSubmit={handleSubmit} className="modal-form">
           <label>Email</label>
           <input type="email" name="email" value={form.email} onChange={handleChange} required disabled={!!selectedAlumno} />
@@ -235,7 +218,7 @@ const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) =
           <input type="password" name="password" value={form.password} onChange={handleChange} required disabled={!!selectedAlumno} />
           {!selectedAlumno && <button type="submit">Registrar</button>}
         </form>
-        {/* Materias asignadas al alumno seleccionado */}
+
         {selectedAlumno && (
           <div className="materias-asignadas-alumno">
             <h4>Materias asignadas:</h4>
@@ -245,6 +228,52 @@ const ModalAlumno = ({ show, onClose, onRegister, feedback, type = 'alumno' }) =
           </div>
         )}
       </div>
+
+      {/* Modal de resultados */}
+      {showResultados && (
+        <>
+          <div className="modal-resultados-overlay" onClick={() => setShowResultados(false)} />
+          <div className="modal-resultados">
+            <div className="modal-resultados-header">
+              <h3 className="modal-resultados-title">{getFilterTitle()}</h3>
+              <button className="modal-resultados-close" onClick={() => setShowResultados(false)}>&times;</button>
+            </div>
+            
+            {loading ? (
+              <div className="no-resultados-mensaje">
+                <p>Cargando alumnos...</p>
+              </div>
+            ) : filteredAlumnos.length > 0 ? (
+              <div className="modal-resultados-lista">
+                {filteredAlumnos.map(a => (
+                  <div 
+                    key={a.id} 
+                    className="alumno-item-resultado" 
+                    onClick={() => handleSelectAlumno(a)}
+                  >
+                    <div className="alumno-info">
+                      <span className="alumno-nombre">{a.username}</span>
+                      <span className="alumno-email">({a.email})</span>
+                    </div>
+                    <div className="alumno-stats">
+                      <span className={`alumno-promedio ${
+                        a.promedio === null ? 'sin-calificacion' : 
+                        a.promedio >= 60 ? 'aprobado' : 'reprobado'
+                      }`}>
+                        Promedio: {a.promedio || 'Sin calificaciones'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="no-resultados-mensaje">
+                <p>No se encontraron alumnos</p>
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };
