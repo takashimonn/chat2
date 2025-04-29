@@ -18,28 +18,28 @@
   gap: 32px;
   justify-content: center;
   flex-wrap: wrap;
+  padding: 20px;
 }
 
 .alumno-card {
-  min-width: 220px;
-  min-height: 160px;
+  width: 200px;
+  height: 200px;
   border-radius: 18px;
   box-shadow: 0 6px 24px rgba(44, 62, 80, 0.13), 0 1.5px 6px rgba(44,62,80,0.08);
   color: #fff;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 1.1rem;
-  font-weight: 500;
-  padding: 28px 20px;
+  padding: 20px;
   transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
 }
 
 .alumno-card h2 {
-  margin: 0 0 10px 0;
-  font-size: 1.3rem;
+  margin: 0;
+  font-size: 1.5rem;
   font-weight: bold;
+  text-align: center;
 }
 
 .alumno-card:hover {

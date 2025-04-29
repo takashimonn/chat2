@@ -121,9 +121,6 @@ const Alumnos = () => {
             <h2>{idx === 0 ? 'Registro de Alumnos' : 
                  idx === 1 ? 'Creación de Materias' : 
                  `Tarjeta ${idx + 1}`}</h2>
-            <p>{idx === 0 ? 'Aquí puedes registrar nuevos alumnos en el sistema.' : 
-                 idx === 1 ? 'Gestiona la creación de nuevas materias.' :
-                 `Contenido de ejemplo para la tarjeta ${idx + 1}.`}</p>
           </div>
         ))}
       </div>
