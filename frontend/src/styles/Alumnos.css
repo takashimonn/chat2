@@ -1,5 +1,5 @@
 .alumnos-container {
-  padding: 40px;
+  padding: 20px 40px 40px 40px;
   min-height: 100vh;
   background: #f4f4f4;
 }
@@ -7,7 +7,7 @@
 .alumnos-content {
   display: flex;
   gap: 40px;
-  margin-top: 20px;
+  margin-top: 0px;
 }
 
 .alumnos-cards {
