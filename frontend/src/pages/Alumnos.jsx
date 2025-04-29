@@ -135,7 +135,7 @@ const Alumnos = () => {
       />
       {showModalMaterias && (
         <div className="modal-overlay">
-          <div className="modal-container">
+          <div className="modal-container modal-materia">
             <div className="modal-header">
               <h2>Creación de Materias</h2>
               <button className="modal-close-btn" onClick={handleCloseModal}>&times;</button>
@@ -143,8 +143,8 @@ const Alumnos = () => {
             <div className="modal-content">
               <form onSubmit={handleCreateSubject}>
                 <div className="form-group">
-                  <label>Nombre:</label>
-                  <input
+                  <label className='modal-input'>Nombre:</label>
+                  <input className='modal-input'
                     type="text"
                     value={newSubject.name}
                     onChange={(e) => setNewSubject({ ...newSubject, name: e.target.value })}

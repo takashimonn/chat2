@@ -773,12 +773,12 @@ const TeacherView = ({ initialTasks = [] }) => {
           >
             <i className="fas fa-plus"></i> Asignar Nueva Tarea
           </button>
-          <button
+          {/* <button
             className="create-button"
             onClick={() => setShowSubjectModal(true)}
           >
             <i className="fas fa-book"></i> Crear Nueva Materia
-          </button>
+          </button> */}
         </div>
         <div className="filter-container filter-right">
           <select
