@@ -10,10 +10,23 @@ import { FaFilter } from 'react-icons/fa';
 const axiosInstance = axios.create({
   baseURL: 'http://localhost:4000',
   headers: {
-    'Authorization': `Bearer ${localStorage.getItem('token')}`,
     'Content-Type': 'application/json'
   }
 });
+
+// Interceptor para actualizar el token en cada petición
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 const colores = [
   '#FF6F61', '#6B5B95', '#88B04B', '#F7CAC9', '#92A8D1',
@@ -180,12 +193,12 @@ const Alumnos = () => {
     }
 
     try {
-      const response = await axiosInstance.post('/api/student-subjects', {
+      const response = await axiosInstance.post('/api/student-subjects/assign', {
         studentId: selectedAssignment.student,
         subjectId: selectedAssignment.subject
       });
 
-      if (response.status === 201) {
+      if (response.status === 201 || response.status === 200) {
         setShowModalAsignacion(false);
         setSelectedAssignment({ student: '', subject: '' });
         Swal.fire({
@@ -195,6 +208,7 @@ const Alumnos = () => {
         });
       }
     } catch (error) {
+      console.error('Error al asignar:', error);
       Swal.fire({
         icon: 'error',
         title: 'Error',
