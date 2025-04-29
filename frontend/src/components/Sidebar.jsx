@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import "../styles/Sidebar.css";
 import Swal from "sweetalert2";
-import axios from "axios";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../utils/axiosConfig";
 import { jwtDecode } from "jwt-decode"; // 👈 Importación corregida
@@ -9,6 +9,12 @@ import { jwtDecode } from "jwt-decode"; // 👈 Importación corregida
 const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [userRole, setUserRole] = useState('');
+
+  useEffect(() => {
+    const role = localStorage.getItem('role');
+    setUserRole(role);
+  }, []);
 
   // Obtener y decodificar token
   let role = null;
@@ -90,8 +96,6 @@ const Sidebar = () => {
           <i className="fas fa-file-alt"></i>
           <span>Examenes</span>
         </Link>
-
-        {/* 👇 Mostrar solo si el rol NO es "alumno" */}
         {role !== "alumno" && (
           <Link
             to="/alumnos"

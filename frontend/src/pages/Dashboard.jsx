@@ -1,16 +1,31 @@
 import { Link, useNavigate } from 'react-router-dom';
 import '../styles/Dashboard.css';
 import Swal from 'sweetalert2';
+import { useState, useEffect } from 'react';
 import axiosInstance from '../utils/axiosConfig';
 import { jwtDecode } from 'jwt-decode';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [userRole, setUserRole] = useState('');
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        const role = decoded.rol || decoded.role || ''; // Ajusta según el nombre de tu campo
+        setUserRole(role);
+      } catch (error) {
+        console.error('Error al decodificar el token:', error);
+      }
+    }
+  }, []);
 
   const handleLogout = () => {
     Swal.fire({
       title: '¿Estás seguro?',
-      text: "¿Deseas cerrar la sesión?",
+      text: '¿Deseas cerrar la sesión?',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#3085d6',
@@ -42,18 +57,6 @@ const Dashboard = () => {
     });
   };
 
-  // Obtener el rol desde el token
-  let userRole = '';
-  const token = localStorage.getItem('token');
-  if (token) {
-    try {
-      const decoded = jwtDecode(token);
-      userRole = decoded.rol || decoded.role || ''; // Ajusta según el nombre de tu campo
-    } catch (error) {
-      console.error('Error al decodificar el token:', error);
-    }
-  }
-
   const cards = [
     {
       title: "Chat Académico",
@@ -81,11 +84,11 @@ const Dashboard = () => {
       description: "Gestiona y visualiza la información de los alumnos del sistema y su rendimiento académico.",
       image: "/images/alumnos.png",
       path: "/alumnos",
-      color: "#CCEEBC"
+      color: "#CCEEBC",
+      onlyTeacher: true
     }
   ];
 
-  // Filtra la tarjeta de "Alumnos" si el rol es alumno
   const filteredCards = userRole === 'alumno'
     ? cards.filter(card => card.title !== "Alumnos")
     : cards;
