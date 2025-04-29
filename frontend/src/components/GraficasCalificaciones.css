@@ -1,0 +1,187 @@
+.dashboard-container {
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.dashboard-title {
+  font-size: 1.75rem;
+  font-weight: bold;
+  text-align: center;
+  color: #1f2937;
+  margin-bottom: 1.5rem;
+}
+
+.dashboard-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-rows: min-content;
+}
+
+.card {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+  transition: all 0.3s ease;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.card:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+
+.chart-container {
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.pie-container {
+  height: 220px;
+  width: 300px;
+  margin: 0 auto;
+  position: relative;
+  right: 15px;
+}
+
+/* Layout específico para cada tarjeta */
+.pie-chart-card {
+  grid-column: 1;
+  grid-row: 1;
+  width: 100%;
+  min-height: 300px;
+}
+
+.bar-chart-card {
+  grid-column: 2;
+  grid-row: 1;
+  width: 100%;
+}
+
+.bar-chart-card-2 {
+  grid-column: 1;
+  grid-row: 2;
+  width: 100%;
+}
+
+.table-card {
+  grid-column: 2;
+  grid-row: 2;
+  width: 100%;
+}
+
+/* Estilos para la tabla */
+.stats-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.875rem;
+}
+
+.stats-table th {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+.stats-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+  color: #1f2937;
+}
+
+.stats-table tr:last-child td {
+  border-bottom: none;
+}
+
+.stats-table tr:hover td {
+  background-color: #f9fafb;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .pie-chart-card,
+  .bar-chart-card,
+  .bar-chart-card-2,
+  .table-card {
+    grid-column: 1;
+  }
+
+  .pie-chart-card {
+    grid-row: 1;
+  }
+
+  .bar-chart-card {
+    grid-row: 2;
+  }
+
+  .bar-chart-card-2 {
+    grid-row: 3;
+  }
+
+  .table-card {
+    grid-row: 4;
+  }
+
+  .chart-container {
+    height: 250px;
+  }
+
+  .pie-container {
+    height: 200px;
+    width: 250px;
+  }
+}
+
+/* Badges para los promedios */
+.grade-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.grade-excellent {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.grade-good {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.grade-regular {
+  background-color: #fef9c3;
+  color: #854d0e;
+}
+
+.grade-deficient {
+  background-color: #fee2e2;
+  color: #991b1b;
+} 
