@@ -5,6 +5,7 @@ import Modal from '../components/ModalAlumno';
 import GraficasCalificaciones from '../components/GraficasCalificaciones';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import { FaFilter } from 'react-icons/fa';
 
 const axiosInstance = axios.create({
   baseURL: 'http://localhost:4000',
@@ -40,6 +41,9 @@ const Alumnos = () => {
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [mainFilter, setMainFilter] = useState('todos');
   const [showFilterResults, setShowFilterResults] = useState(false);
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [selectedFilter, setSelectedFilter] = useState('todos');
+  const [showResultsModal, setShowResultsModal] = useState(false);
 
   useEffect(() => {
     const tipo = localStorage.getItem('role') || 'maestro';
@@ -81,22 +85,20 @@ const Alumnos = () => {
 
       // Aplicar filtros principales
       switch (mainFilter) {
-        case 'evaluacion_pendiente':
+        case 'aprobados':
           filtered = filtered.filter(student => 
-            !student.calificaciones || student.calificaciones.length === 0
+            student.promedio && student.promedio > 60
           );
           break;
-        case 'mejor_desempeno':
-          filtered = filtered
-            .filter(student => student.promedio)
-            .sort((a, b) => b.promedio - a.promedio)
-            .slice(0, 10); // Top 10 estudiantes
+        case 'reprobados':
+          filtered = filtered.filter(student => 
+            student.promedio && student.promedio <= 60
+          );
           break;
-        case 'bajo_desempeno':
-          filtered = filtered
-            .filter(student => student.promedio)
-            .sort((a, b) => a.promedio - b.promedio)
-            .slice(0, 10); // 10 estudiantes con menor desempeño
+        case 'sin_calificacion':
+          filtered = filtered.filter(student => 
+            !student.promedio || student.calificaciones?.length === 0
+          );
           break;
         default:
           // 'todos' - no aplicar filtro adicional
@@ -104,6 +106,9 @@ const Alumnos = () => {
       }
 
       setFilteredStudents(filtered);
+      if (searchTerm || mainFilter !== 'todos') {
+        setShowResultsModal(true);
+      }
     };
 
     filterStudents();
@@ -198,22 +203,23 @@ const Alumnos = () => {
     }
   };
 
-  const getFilterTitle = () => {
-    switch (mainFilter) {
-      case 'evaluacion_pendiente':
-        return 'Alumnos con Evaluación Pendiente';
-      case 'mejor_desempeno':
-        return 'Alumnos con Mejor Desempeño';
-      case 'bajo_desempeno':
-        return 'Alumnos con Bajo Desempeño';
-      default:
-        return 'Todos los Alumnos';
-    }
+  const handleFilterSelect = (filter) => {
+    setSelectedFilter(filter);
+    setMainFilter(filter);
+    setShowFilterDropdown(false);
   };
 
-  const handleFilterClick = (filter) => {
-    setMainFilter(filter);
-    setShowFilterResults(true);
+  const getFilterTitle = () => {
+    switch (mainFilter) {
+      case 'aprobados':
+        return 'Alumnos aprobados';
+      case 'reprobados':
+        return 'Alumnos reprobados';
+      case 'sin_calificacion':
+        return 'Alumnos sin calificación';
+      default:
+        return searchTerm ? 'Resultados de búsqueda' : 'Todos los Alumnos';
+    }
   };
 
   if (userType !== 'maestro') {
@@ -224,48 +230,102 @@ const Alumnos = () => {
     <div className="contenedor-principal">
       <div className="contenedor"></div>
       <div className="alumnos-container">
-        <h1>Alumnos</h1>
+        <h1>Gestión de Alumnos</h1>
 
         <div className="search-filter-container">
           <div className="busqueda-alumnos">
             <input
               type="text"
-              placeholder="Buscar alumno por nombre"
+              placeholder="Buscar alumno..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
-                setShowSearchResults(!!e.target.value);
+                if (e.target.value === '') {
+                  setShowResultsModal(false);
+                }
               }}
             />
-          </div>
-
-          <div className="filtros-container">
-            <button
-              className={`filter-button ${mainFilter === 'todos' ? 'active' : ''}`}
-              onClick={() => handleFilterClick('todos')}
-            >
-              Todos los alumnos
-            </button>
-            <button
-              className={`filter-button ${mainFilter === 'evaluacion_pendiente' ? 'active' : ''}`}
-              onClick={() => handleFilterClick('evaluacion_pendiente')}
-            >
-              Evaluación pendiente
-            </button>
-            <button
-              className={`filter-button ${mainFilter === 'mejor_desempeno' ? 'active' : ''}`}
-              onClick={() => handleFilterClick('mejor_desempeno')}
-            >
-              Mejor desempeño
-            </button>
-            <button
-              className={`filter-button ${mainFilter === 'bajo_desempeno' ? 'active' : ''}`}
-              onClick={() => handleFilterClick('bajo_desempeno')}
-            >
-              Bajo desempeño
-            </button>
+            <div className="filter-icon-container">
+              <FaFilter 
+                className="filter-icon" 
+                onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+              />
+              {showFilterDropdown && (
+                <div className="filter-dropdown">
+                  <div 
+                    className={`filter-option ${selectedFilter === 'todos' ? 'active' : ''}`}
+                    onClick={() => handleFilterSelect('todos')}
+                  >
+                    Todos los alumnos
+                  </div>
+                  <div 
+                    className={`filter-option ${selectedFilter === 'aprobados' ? 'active' : ''}`}
+                    onClick={() => handleFilterSelect('aprobados')}
+                  >
+                    Alumnos aprobados
+                  </div>
+                  <div 
+                    className={`filter-option ${selectedFilter === 'reprobados' ? 'active' : ''}`}
+                    onClick={() => handleFilterSelect('reprobados')}
+                  >
+                    Alumnos reprobados
+                  </div>
+                  <div 
+                    className={`filter-option ${selectedFilter === 'sin_calificacion' ? 'active' : ''}`}
+                    onClick={() => handleFilterSelect('sin_calificacion')}
+                  >
+                    Sin calificación
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
+
+        {/* Modal de Resultados */}
+        {showResultsModal && (
+          <div className="modal-overlay">
+            <div className="modal-container results-modal">
+              <div className="modal-header">
+                <h2>{getFilterTitle()}</h2>
+                <button 
+                  className="modal-close-btn" 
+                  onClick={() => {
+                    setShowResultsModal(false);
+                    if (mainFilter !== 'todos') {
+                      setMainFilter('todos');
+                      setSelectedFilter('todos');
+                    }
+                    setSearchTerm('');
+                  }}
+                >
+                  &times;
+                </button>
+              </div>
+              <div className="modal-content">
+                {filteredStudents.length > 0 ? (
+                  <div className="resultados-busqueda">
+                    {filteredStudents.map((student) => (
+                      <div key={student.id} className="resultado-alumno">
+                        <div className="info-alumno">
+                          <h3>{student.username}</h3>
+                          <p>{student.email}</p>
+                          {student.promedio && (
+                            <p className="promedio">
+                              Promedio: {student.promedio.toFixed(2)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="no-resultados">No se encontraron alumnos</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="alumnos-content">
           <div className="alumnos-cards">
@@ -287,70 +347,6 @@ const Alumnos = () => {
             <GraficasCalificaciones axiosInstance={axiosInstance} />
           </div>
         </div>
-
-        {showSearchResults && (
-          <div className="modal-overlay">
-            <div className="modal-container">
-              <div className="modal-header">
-                <h2>Resultados de búsqueda</h2>
-                <button 
-                  className="modal-close-btn" 
-                  onClick={() => setShowSearchResults(false)}
-                >
-                  &times;
-                </button>
-              </div>
-              <div className="modal-content">
-                {filteredStudents.length > 0 ? (
-                  <div className="resultados-busqueda">
-                    {filteredStudents.map((student) => (
-                      <div key={student.id} className="resultado-alumno">
-                        <div className="info-alumno">
-                          <h3>{student.username}</h3>
-                          <p>{student.email}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="no-resultados">No se encontraron alumnos</p>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {showFilterResults && (
-          <div className="modal-overlay">
-            <div className="modal-container">
-              <div className="modal-header">
-                <h2>{getFilterTitle()}</h2>
-                <button 
-                  className="modal-close-btn" 
-                  onClick={() => setShowFilterResults(false)}
-                >
-                  &times;
-                </button>
-              </div>
-              <div className="modal-content">
-                {filteredStudents.length > 0 ? (
-                  <div className="resultados-busqueda">
-                    {filteredStudents.map((student) => (
-                      <div key={student.id} className="resultado-alumno">
-                        <div className="info-alumno">
-                          <h3>{student.username}</h3>
-                          <p>{student.email}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="no-resultados">No se encontraron alumnos para este filtro</p>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
 
         <Modal
           show={showModal}
