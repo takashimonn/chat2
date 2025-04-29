@@ -34,10 +34,17 @@ const Alumnos = () => {
   const [cardColors, setCardColors] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [showModalMaterias, setShowModalMaterias] = useState(false);
+  const [showModalAsignacion, setShowModalAsignacion] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [newSubject, setNewSubject] = useState({
     name: '',
     description: ''
+  });
+  const [students, setStudents] = useState([]);
+  const [subjects, setSubjects] = useState([]);
+  const [selectedAssignment, setSelectedAssignment] = useState({
+    student: '',
+    subject: ''
   });
 
   useEffect(() => {
@@ -47,17 +54,39 @@ const Alumnos = () => {
     setCardColors(getRandomColors(3));
   }, []);
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [studentsRes, subjectsRes] = await Promise.all([
+          axiosInstance.get('/api/users/students'),
+          axiosInstance.get('/api/subjects')
+        ]);
+        setStudents(studentsRes.data);
+        setSubjects(subjectsRes.data);
+      } catch (error) {
+        console.error('Error al cargar datos:', error);
+      }
+    };
+
+    if (showModalAsignacion) {
+      fetchData();
+    }
+  }, [showModalAsignacion]);
+
   const handleCardClick = (idx) => {
     if (idx === 0) {
       setShowModal(true);
     } else if (idx === 1) {
       setShowModalMaterias(true);
+    } else if (idx === 2) {
+      setShowModalAsignacion(true);
     }
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
     setShowModalMaterias(false);
+    setShowModalAsignacion(false);
     setFeedback('');
     setNewSubject({ name: '', description: '' });
   };
@@ -103,6 +132,26 @@ const Alumnos = () => {
     }
   };
 
+  const handleAssignmentSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await axiosInstance.post('/api/student-subjects', selectedAssignment);
+      setShowModalAsignacion(false);
+      Swal.fire({
+        icon: 'success',
+        title: '¡Éxito!',
+        text: 'Materia asignada correctamente'
+      });
+    } catch (error) {
+      console.error('Error al asignar materia:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Error al asignar la materia'
+      });
+    }
+  };
+
   if (userType !== 'maestro') {
     return <div className="alumnos-container"><h2>No tienes acceso a esta sección.</h2></div>;
   }
@@ -120,7 +169,7 @@ const Alumnos = () => {
           >
             <h2>{idx === 0 ? 'Registro de Alumnos' : 
                  idx === 1 ? 'Creación de Materias' : 
-                 `Tarjeta ${idx + 1}`}</h2>
+                 'Asignación de Materias'}</h2>
           </div>
         ))}
       </div>
@@ -158,6 +207,60 @@ const Alumnos = () => {
                 </div>
                 <div className="modal-buttons">
                   <button type="submit">Crear</button>
+                  <button type="button" onClick={handleCloseModal}>Cancelar</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+      {showModalAsignacion && (
+        <div className="modal-overlay">
+          <div className="modal-container modal-asignacion">
+            <div className="modal-header">
+              <h2>Asignación de Materias</h2>
+              <button className="modal-close-btn" onClick={handleCloseModal}>&times;</button>
+            </div>
+            <div className="modal-content">
+              <form onSubmit={handleAssignmentSubmit}>
+                <div className="form-group">
+                  <label>Alumno:</label>
+                  <select
+                    value={selectedAssignment.student}
+                    onChange={(e) => setSelectedAssignment({
+                      ...selectedAssignment,
+                      student: e.target.value
+                    })}
+                    required
+                  >
+                    <option value="">Selecciona un alumno</option>
+                    {students.map(student => (
+                      <option key={student._id} value={student._id}>
+                        {student.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Materia:</label>
+                  <select
+                    value={selectedAssignment.subject}
+                    onChange={(e) => setSelectedAssignment({
+                      ...selectedAssignment,
+                      subject: e.target.value
+                    })}
+                    required
+                  >
+                    <option value="">Selecciona una materia</option>
+                    {subjects.map(subject => (
+                      <option key={subject._id} value={subject._id}>
+                        {subject.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="modal-buttons">
+                  <button type="submit">Asignar</button>
                   <button type="button" onClick={handleCloseModal}>Cancelar</button>
                 </div>
               </form>
