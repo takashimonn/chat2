@@ -47,56 +47,33 @@ const GraficasCalificaciones = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const cargarEstadisticas = async () => {
+  const inicializarDatos = async () => {
     try {
-      const response = await axios.get('http://localhost:4000/api/calificaciones/estadisticas');
-      console.log('Datos recibidos:', response.data);
+      setLoading(true);
+      // Primero intentamos obtener las estadísticas
+      const responseEstadisticas = await axios.get('http://localhost:4000/api/calificaciones/estadisticas');
       
-      if (response.data) {
-        const datosNormalizados = {
-          ...estadisticasIniciales,
-          ...response.data,
-          distribucionGeneral: {
-            ...estadisticasIniciales.distribucionGeneral,
-            ...(response.data.distribucionGeneral || {})
-          },
-          promediosPorTipo: {
-            ...estadisticasIniciales.promediosPorTipo,
-            ...(response.data.promediosPorTipo || {})
-          }
-        };
-        
-        console.log('Datos normalizados:', datosNormalizados);
-        setEstadisticas(datosNormalizados);
+      // Si no hay datos, creamos los datos de prueba
+      if (!responseEstadisticas.data || responseEstadisticas.data.total === 0) {
+        await axios.post('http://localhost:4000/api/calificaciones/datos-prueba');
+        // Volvemos a obtener las estadísticas después de crear los datos
+        const newResponse = await axios.get('http://localhost:4000/api/calificaciones/estadisticas');
+        setEstadisticas(newResponse.data);
+      } else {
+        setEstadisticas(responseEstadisticas.data);
       }
+      
       setLoading(false);
     } catch (error) {
-      console.error('Error al obtener datos de calificaciones:', error);
+      console.error('Error al inicializar datos:', error);
       setError('Error al cargar los datos');
       setLoading(false);
     }
   };
 
-  const cargarDatosPrueba = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.post('http://localhost:4000/api/calificaciones/datos-prueba');
-      console.log('Datos de prueba creados:', response.data);
-      await cargarEstadisticas(); // Recargar estadísticas después de crear datos de prueba
-    } catch (error) {
-      console.error('Error al cargar datos de prueba:', error);
-      setError('Error al cargar datos de prueba');
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    cargarEstadisticas();
+    inicializarDatos();
   }, []);
-
-  // Si está cargando o hay error, mostrar el estado correspondiente
-  if (loading) return <div className="text-center p-4">Cargando...</div>;
-  if (error) return <div className="text-center p-4 text-red-500">{error}</div>;
 
   // Datos para la gráfica de pastel
   const dataPie = {
@@ -174,23 +151,26 @@ const GraficasCalificaciones = () => {
     },
   };
 
+  if (loading) return (
+    <div className="flex justify-center items-center min-h-screen">
+      <div className="text-center">
+        <div className="text-xl mb-4">Cargando estadísticas...</div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+      </div>
+    </div>
+  );
+
+  if (error) return (
+    <div className="flex justify-center items-center min-h-screen">
+      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+        {error}
+      </div>
+    </div>
+  );
+
   return (
     <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Dashboard de Calificaciones</h1>
-        <button
-          onClick={cargarDatosPrueba}
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-        >
-          Cargar Datos de Prueba
-        </button>
-      </div>
-
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
-          {error}
-        </div>
-      )}
+      <h1 className="text-2xl font-bold mb-6 text-center">Dashboard de Calificaciones</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Gráfica de Pastel - Distribución de Promedios de Tareas */}
@@ -219,7 +199,7 @@ const GraficasCalificaciones = () => {
 
         {/* Tabla de Mejores Promedios */}
         <div className="bg-white p-4 rounded-lg shadow">
-          <h2 className="text-lg font-semibold mb-4">Top 5 Mejores Promedios</h2>
+          <h2 className="text-lg font-semibold mb-4">Top 5 Mejores Promedios en Tareas</h2>
           <div className="overflow-x-auto">
             <table className="min-w-full table-auto">
               <thead>
