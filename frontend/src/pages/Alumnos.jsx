@@ -23,6 +23,7 @@ const Alumnos = () => {
   const [userType, setUserType] = useState('');
   const [cardColors, setCardColors] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [showModalMaterias, setShowModalMaterias] = useState(false);
   const [feedback, setFeedback] = useState('');
 
   useEffect(() => {
@@ -33,11 +34,16 @@ const Alumnos = () => {
   }, []);
 
   const handleCardClick = (idx) => {
-    if (idx === 0) setShowModal(true);
+    if (idx === 0) {
+      setShowModal(true);
+    } else if (idx === 1) {
+      setShowModalMaterias(true);
+    }
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
+    setShowModalMaterias(false);
     setFeedback('');
   };
 
@@ -76,8 +82,12 @@ const Alumnos = () => {
             key={idx}
             onClick={() => handleCardClick(idx)}
           >
-            <h2>{idx === 0 ? 'Registro de Alumnos' : `Tarjeta ${idx + 1}`}</h2>
-            <p>{idx === 0 ? 'Aquí puedes registrar nuevos alumnos en el sistema.' : `Contenido de ejemplo para la tarjeta ${idx + 1}.`}</p>
+            <h2>{idx === 0 ? 'Registro de Alumnos' : 
+                 idx === 1 ? 'Creación de Materias' : 
+                 `Tarjeta ${idx + 1}`}</h2>
+            <p>{idx === 0 ? 'Aquí puedes registrar nuevos alumnos en el sistema.' : 
+                 idx === 1 ? 'Gestiona la creación de nuevas materias.' :
+                 `Contenido de ejemplo para la tarjeta ${idx + 1}.`}</p>
           </div>
         ))}
       </div>
@@ -87,6 +97,16 @@ const Alumnos = () => {
         onRegister={handleRegisterAlumno}
         feedback={feedback}
       />
+      {showModalMaterias && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <div className="modal-header">
+              <h2>Creación de Materias</h2>
+              <button className="modal-close-btn" onClick={handleCloseModal}>&times;</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
