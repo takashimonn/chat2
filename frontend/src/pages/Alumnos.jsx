@@ -185,6 +185,8 @@ const Alumnos = () => {
   }
 
   return (
+    <div className="contenedor-principal"> 
+    <div className="contenedor"></div>
     <div className="alumnos-container">
       <h1>Alumnos</h1>
       <div className="alumnos-content">
@@ -302,6 +304,10 @@ const Alumnos = () => {
         </div>
       )}
     </div>
+
+    </div>
+      
+
   );
 };
 

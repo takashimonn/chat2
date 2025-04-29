@@ -2,6 +2,7 @@
   padding: 20px 40px 40px 40px;
   min-height: 100vh;
   background: #f4f4f4;
+  border-radius: 2rem;
 }
 
 .alumnos-content {
@@ -58,6 +59,16 @@
   padding: 20px;
   transition: transform 0.2s, box-shadow 0.2s;
   cursor: pointer;
+}
+
+.contenedor-principal {
+  background-color: rgb(39, 38, 38); 
+  padding: 1rem;
+}
+
+.contenedor {
+  background-color: rgb(255, 255, 255);
+  border-radius: 2rem;
 }
 
 .alumno-card h2 {
