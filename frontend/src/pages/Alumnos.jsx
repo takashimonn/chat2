@@ -58,13 +58,18 @@ const Alumnos = () => {
     const fetchData = async () => {
       try {
         const [studentsRes, subjectsRes] = await Promise.all([
-          axiosInstance.get('/api/users/students'),
-          axiosInstance.get('/api/subjects')
+          axiosInstance.get('/api/users/alumnos'),
+          axiosInstance.get('/api/subjects/teacher')
         ]);
         setStudents(studentsRes.data);
         setSubjects(subjectsRes.data);
       } catch (error) {
         console.error('Error al cargar datos:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Error al cargar los datos'
+        });
       }
     };
 
@@ -235,8 +240,8 @@ const Alumnos = () => {
                   >
                     <option value="">Selecciona un alumno</option>
                     {students.map(student => (
-                      <option key={student._id} value={student._id}>
-                        {student.name}
+                      <option key={student.id} value={student.id}>
+                        {student.username}
                       </option>
                     ))}
                   </select>
