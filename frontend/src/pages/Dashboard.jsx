@@ -45,24 +45,31 @@ const Dashboard = () => {
   const cards = [
     {
       title: "Chat Académico",
-      description: "Comunícate con profesores y compañeros en tiempo real para resolver dudas y compartir información.",
+      description: "Comunícate en tiempo real con la comunidad académica y resuelve dudas al instante.",
       image: "/images/chat.png",
       path: "/chat",
-      color: "#e3f2fd"
+      color: "#CCEEBC"
     },
     {
       title: "Tareas",
-      description: "Gestiona las tareas del curso",
+      description: "Gestiona las tareas del curso, califica entregas y realiza seguimiento del progreso de los alumnos.",
       image: "/images/calificaciones.png",
       path: "/tareas",
-      color: "#f3e5f5"
+      color: "#CCEEBC"
     },
     {
       title: "Examenes",
-      description: "Nuevas funcionalidades en desarrollo para mejorar tu experiencia académica.",
+      description: "Crea y administra exámenes, establece fechas límite y visualiza resultados de manera eficiente.",
       image: "/images/prox.png",
       path: "/examenes",
-      color: "#fff3e0"
+      color: "#CCEEBC"
+    },
+    {
+      title: "Alumnos",
+      description: "Gestiona y visualiza la información de los alumnos del sistema y su rendimiento académico.",
+      image: "/images/alumnos.png",
+      path: "/alumnos",
+      color: "#CCEEBC"
     }
   ];
 
