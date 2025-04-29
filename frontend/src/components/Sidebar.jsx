@@ -1,13 +1,19 @@
 import { Link, useLocation } from "react-router-dom";
 import "../styles/Sidebar.css";
 import Swal from "sweetalert2";
-import axios from "axios";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../utils/axiosConfig";
 
 const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [userRole, setUserRole] = useState('');
+
+  useEffect(() => {
+    const role = localStorage.getItem('role');
+    setUserRole(role);
+  }, []);
 
   const handleLogout = () => {
     Swal.fire({
@@ -85,15 +91,17 @@ const Sidebar = () => {
           <i className="fas fa-file-alt"></i>
           <span>Examenes</span>
         </Link>
-        <Link
-          to="/alumnos"
-          className={`nav-item ${
-            location.pathname === "/alumnos" ? "active" : ""
-          }`}
-        >
-          <i className="fas fa-users"></i>
-          <span>Alumnos</span>
-        </Link>
+        {userRole === 'maestro' && (
+          <Link
+            to="/alumnos"
+            className={`nav-item ${
+              location.pathname === "/alumnos" ? "active" : ""
+            }`}
+          >
+            <i className="fas fa-users"></i>
+            <span>Alumnos</span>
+          </Link>
+        )}
       </nav>
 
       <div className="sidebar-footer">

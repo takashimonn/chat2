@@ -1,11 +1,17 @@
 import { Link, useNavigate } from 'react-router-dom';
 import '../styles/Dashboard.css';
 import Swal from 'sweetalert2';
-import axios from 'axios';
+import { useState, useEffect } from 'react';
 import axiosInstance from '../utils/axiosConfig';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [userRole, setUserRole] = useState('');
+
+  useEffect(() => {
+    const role = localStorage.getItem('role');
+    setUserRole(role);
+  }, []);
 
   const handleLogout = () => {
     Swal.fire({
@@ -69,15 +75,17 @@ const Dashboard = () => {
       description: "Gestiona y visualiza la información de los alumnos del sistema y su rendimiento académico.",
       image: "/images/alumnos.png",
       path: "/alumnos",
-      color: "#CCEEBC"
+      color: "#CCEEBC",
+      onlyTeacher: true
     }
   ];
+
+  const filteredCards = cards.filter(card => !card.onlyTeacher || userRole === 'maestro');
 
   return (
     <div className="dashboard">
       <div className="dashboard-header">
         <h1>Sistema de Control Escolar</h1>
-
         <p>Selecciona una opción para comenzar</p>
       </div>
 
@@ -87,7 +95,7 @@ const Dashboard = () => {
       </button>
 
       <div className="cards-container">
-        {cards.map((card, index) => (
+        {filteredCards.map((card, index) => (
           <Link 
             to={card.path} 
             className="card" 
