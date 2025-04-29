@@ -1,8 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom';
 import '../styles/Dashboard.css';
 import Swal from 'sweetalert2';
-import axios from 'axios';
 import axiosInstance from '../utils/axiosConfig';
+import { jwtDecode } from 'jwt-decode';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -42,6 +42,18 @@ const Dashboard = () => {
     });
   };
 
+  // Obtener el rol desde el token
+  let userRole = '';
+  const token = localStorage.getItem('token');
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      userRole = decoded.rol || decoded.role || ''; // Ajusta según el nombre de tu campo
+    } catch (error) {
+      console.error('Error al decodificar el token:', error);
+    }
+  }
+
   const cards = [
     {
       title: "Chat Académico",
@@ -73,11 +85,15 @@ const Dashboard = () => {
     }
   ];
 
+  // Filtra la tarjeta de "Alumnos" si el rol es alumno
+  const filteredCards = userRole === 'alumno'
+    ? cards.filter(card => card.title !== "Alumnos")
+    : cards;
+
   return (
     <div className="dashboard">
       <div className="dashboard-header">
         <h1>Sistema de Control Escolar</h1>
-
         <p>Selecciona una opción para comenzar</p>
       </div>
 
@@ -87,7 +103,7 @@ const Dashboard = () => {
       </button>
 
       <div className="cards-container">
-        {cards.map((card, index) => (
+        {filteredCards.map((card, index) => (
           <Link 
             to={card.path} 
             className="card" 
@@ -111,4 +127,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard; 
+export default Dashboard;

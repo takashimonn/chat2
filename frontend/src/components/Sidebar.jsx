@@ -4,10 +4,23 @@ import Swal from "sweetalert2";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../utils/axiosConfig";
+import { jwtDecode } from "jwt-decode"; // 👈 Importación corregida
 
 const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Obtener y decodificar token
+  let role = null;
+  const token = localStorage.getItem("token");
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      role = decoded?.role || null;
+    } catch (error) {
+      console.error("Token inválido:", error);
+    }
+  }
 
   const handleLogout = () => {
     Swal.fire({
@@ -47,53 +60,47 @@ const Sidebar = () => {
         <img src="/images/utd.webp" alt="Logo" className="sidebar-logo" />
         <span>Control Escolar</span>
       </div>
+
       <nav className="sidebar-nav">
         <Link
           to="/dashboard"
-          className={`nav-item ${
-            location.pathname === "/dashboard" ? "active" : ""
-          }`}
+          className={`nav-item ${location.pathname === "/dashboard" ? "active" : ""}`}
         >
           <i className="fas fa-home"></i>
           <span>Inicio</span>
         </Link>
         <Link
           to="/tareas"
-          className={`nav-item ${
-            location.pathname === "/tareas" ? "active" : ""
-          }`}
+          className={`nav-item ${location.pathname === "/tareas" ? "active" : ""}`}
         >
           <i className="fas fa-tasks"></i>
           <span>Tareas</span>
         </Link>
-
         <Link
           to="/chat"
-          className={`nav-item ${
-            location.pathname === "/chat" ? "active" : ""
-          }`}
+          className={`nav-item ${location.pathname === "/chat" ? "active" : ""}`}
         >
           <i className="fas fa-comments"></i>
           <span>Chat</span>
         </Link>
         <Link
           to="/examenes"
-          className={`nav-item ${
-            location.pathname === "/examenes" ? "active" : ""
-          }`}
+          className={`nav-item ${location.pathname === "/examenes" ? "active" : ""}`}
         >
           <i className="fas fa-file-alt"></i>
           <span>Examenes</span>
         </Link>
-        <Link
-          to="/alumnos"
-          className={`nav-item ${
-            location.pathname === "/alumnos" ? "active" : ""
-          }`}
-        >
-          <i className="fas fa-users"></i>
-          <span>Alumnos</span>
-        </Link>
+
+        {/* 👇 Mostrar solo si el rol NO es "alumno" */}
+        {role !== "alumno" && (
+          <Link
+            to="/alumnos"
+            className={`nav-item ${location.pathname === "/alumnos" ? "active" : ""}`}
+          >
+            <i className="fas fa-users"></i>
+            <span>Alumnos</span>
+          </Link>
+        )}
       </nav>
 
       <div className="sidebar-footer">
