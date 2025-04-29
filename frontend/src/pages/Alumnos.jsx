@@ -1,6 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import '../styles/Alumnos.css';
 import Modal from '../components/ModalAlumno';
+import axios from 'axios';
+import Swal from 'sweetalert2';
+
+const axiosInstance = axios.create({
+  baseURL: 'http://localhost:4000',
+  headers: {
+    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+    'Content-Type': 'application/json'
+  }
+});
 
 const colores = [
   '#FF6F61', // rojo
@@ -25,6 +35,10 @@ const Alumnos = () => {
   const [showModal, setShowModal] = useState(false);
   const [showModalMaterias, setShowModalMaterias] = useState(false);
   const [feedback, setFeedback] = useState('');
+  const [newSubject, setNewSubject] = useState({
+    name: '',
+    description: ''
+  });
 
   useEffect(() => {
     // Simulación: obtener el tipo de usuario desde localStorage o API
@@ -45,6 +59,28 @@ const Alumnos = () => {
     setShowModal(false);
     setShowModalMaterias(false);
     setFeedback('');
+    setNewSubject({ name: '', description: '' });
+  };
+
+  const handleCreateSubject = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axiosInstance.post('/api/subjects', newSubject);
+      setNewSubject({ name: '', description: '' });
+      setShowModalMaterias(false);
+      Swal.fire({
+        icon: 'success',
+        title: '¡Éxito!',
+        text: 'Materia creada correctamente'
+      });
+    } catch (error) {
+      console.error('Error al crear la materia:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Error al crear la materia'
+      });
+    }
   };
 
   const handleRegisterAlumno = async (formData) => {
@@ -103,6 +139,31 @@ const Alumnos = () => {
             <div className="modal-header">
               <h2>Creación de Materias</h2>
               <button className="modal-close-btn" onClick={handleCloseModal}>&times;</button>
+            </div>
+            <div className="modal-content">
+              <form onSubmit={handleCreateSubject}>
+                <div className="form-group">
+                  <label>Nombre:</label>
+                  <input
+                    type="text"
+                    value={newSubject.name}
+                    onChange={(e) => setNewSubject({ ...newSubject, name: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Descripción:</label>
+                  <textarea
+                    value={newSubject.description}
+                    onChange={(e) => setNewSubject({ ...newSubject, description: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="modal-buttons">
+                  <button type="submit">Crear</button>
+                  <button type="button" onClick={handleCloseModal}>Cancelar</button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
