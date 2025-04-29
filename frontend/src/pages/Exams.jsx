@@ -1259,7 +1259,18 @@ const Exams = () => {
           {showBankModal && (
             <div className="modal-overlay">
               <div className="modal-content">
-                <h2>Banco de Preguntas del Maestro</h2>
+                <div className="modal-header">
+                  <h2>Banco de Preguntas del Maestro</h2>
+                  <button 
+                    className="modal-close-btn" 
+                    onClick={() => { 
+                      setShowBankModal(false); 
+                      setSelectedBankSubject(""); 
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
                 <div className="form-group">
                   <label>Materia:</label>
                   <select
@@ -1293,11 +1304,6 @@ const Exams = () => {
                       </div>
                     </div>
                   ))}
-                </div>
-                <div className="modal-buttons">
-                  <button type="button" onClick={() => { setShowBankModal(false); setSelectedBankSubject(""); }}>
-                    Cerrar
-                  </button>
                 </div>
               </div>
             </div>
