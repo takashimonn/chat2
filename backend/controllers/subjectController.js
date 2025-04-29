@@ -15,10 +15,17 @@ const subjectController = {
         });
       }
 
+      // Crear la materia
       const newSubject = await Subject.create({
         name,
         description,
         teacher: req.user._id
+      });
+
+      // Crear la relación profesor-materia
+      await TeacherSubject.create({
+        teacher: req.user._id,
+        subject: newSubject._id
       });
 
       const populatedSubject = await Subject.findById(newSubject._id)
