@@ -59,8 +59,12 @@ const Alumnos = () => {
       try {
         const [studentsRes, subjectsRes] = await Promise.all([
           axiosInstance.get('/api/users/alumnos'),
-          axiosInstance.get('/api/subjects/teacher')
+          axiosInstance.get('/api/subjects/teacher/withId')
         ]);
+        
+        console.log('Datos completos de alumnos:', studentsRes.data);
+        console.log('Materias con IDs:', subjectsRes.data);
+        
         setStudents(studentsRes.data);
         setSubjects(subjectsRes.data);
       } catch (error) {
@@ -140,19 +144,37 @@ const Alumnos = () => {
   const handleAssignmentSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axiosInstance.post('/api/student-subjects', selectedAssignment);
-      setShowModalAsignacion(false);
-      Swal.fire({
-        icon: 'success',
-        title: '¡Éxito!',
-        text: 'Materia asignada correctamente'
+      console.log('Enviando asignación:', selectedAssignment);
+      
+      if (!selectedAssignment.student || !selectedAssignment.subject) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Campos Incompletos',
+          text: 'Por favor selecciona un alumno y una materia'
+        });
+        return;
+      }
+
+      const response = await axiosInstance.post('/api/student-subjects', {
+        studentId: selectedAssignment.student,
+        subjectId: selectedAssignment.subject
       });
+
+      if (response.status === 201) {
+        setShowModalAsignacion(false);
+        setSelectedAssignment({ student: '', subject: '' });
+        Swal.fire({
+          icon: 'success',
+          title: '¡Éxito!',
+          text: 'Materia asignada correctamente'
+        });
+      }
     } catch (error) {
-      console.error('Error al asignar materia:', error);
+      console.error('Error:', error);
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'Error al asignar la materia'
+        text: error.response?.data?.message || 'Error al asignar la materia'
       });
     }
   };
@@ -258,7 +280,7 @@ const Alumnos = () => {
                   >
                     <option value="">Selecciona una materia</option>
                     {subjects.map(subject => (
-                      <option key={subject._id} value={subject._id}>
+                      <option key={subject.id} value={subject.id}>
                         {subject.name}
                       </option>
                     ))}

@@ -136,6 +136,22 @@ const subjectController = {
       console.error('Error al obtener estudiantes de la materia:', error);
       res.status(500).json({ message: 'Error al obtener estudiantes' });
     }
+  },
+
+  // Nuevo método para obtener materias con ID
+  getTeacherSubjectsWithId: async (req, res) => {
+    try {
+      const teacherId = req.user._id;
+      const subjects = await Subject.find({ teacher: teacherId })
+        .select('_id name description')
+        .lean();
+
+      console.log('Materias con ID encontradas:', subjects);
+      res.json(subjects);
+    } catch (error) {
+      console.error('Error al obtener materias con ID:', error);
+      res.status(500).json({ message: 'Error al obtener las materias' });
+    }
   }
 };
 
