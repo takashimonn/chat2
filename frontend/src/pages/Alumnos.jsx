@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import '../styles/Alumnos.css';
 import Modal from '../components/ModalAlumno';
+import GraficasCalificaciones from '../components/GraficasCalificaciones';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 
@@ -186,19 +187,24 @@ const Alumnos = () => {
   return (
     <div className="alumnos-container">
       <h1>Alumnos</h1>
-      <div className="alumnos-cards">
-        {cardColors.map((color, idx) => (
-          <div
-            className="alumno-card"
-            style={{ background: color }}
-            key={idx}
-            onClick={() => handleCardClick(idx)}
-          >
-            <h2>{idx === 0 ? 'Registro de Alumnos' : 
-                 idx === 1 ? 'Creación de Materias' : 
-                 'Asignación de Materias'}</h2>
-          </div>
-        ))}
+      <div className="alumnos-content">
+        <div className="alumnos-cards">
+          {cardColors.map((color, idx) => (
+            <div
+              className="alumno-card"
+              style={{ background: color }}
+              key={idx}
+              onClick={() => handleCardClick(idx)}
+            >
+              <h2>{idx === 0 ? 'Registro de Alumnos' : 
+                   idx === 1 ? 'Creación de Materias' : 
+                   'Asignación de Materias'}</h2>
+            </div>
+          ))}
+        </div>
+        <div className="alumnos-graficas">
+          <GraficasCalificaciones axiosInstance={axiosInstance} />
+        </div>
       </div>
       <Modal
         show={showModal}

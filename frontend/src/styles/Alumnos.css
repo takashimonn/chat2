@@ -4,10 +4,10 @@
   background: #f4f4f4;
 }
 
-.alumnos-container h1 {
-  font-size: 2.2rem;
-  margin-bottom: 32px;
-  color: #222;
+.alumnos-content {
+  display: flex;
+  gap: 40px;
+  margin-top: 20px;
 }
 
 .alumnos-cards {
@@ -17,6 +17,33 @@
   gap: 20px;
   padding: 20px;
   max-width: 250px;
+}
+
+.alumnos-graficas {
+  flex: 1;
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.graficas-container {
+  height: 100%;
+}
+
+.graficas-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  height: calc(100% - 40px); /* Resta el espacio del título */
+}
+
+.grafica-item {
+  background: white;
+  border-radius: 8px;
+  padding: 15px;
+  height: 300px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .alumno-card {
