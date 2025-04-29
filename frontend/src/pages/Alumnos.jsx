@@ -39,6 +39,7 @@ const Alumnos = () => {
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [mainFilter, setMainFilter] = useState('todos');
+  const [showFilterResults, setShowFilterResults] = useState(false);
 
   useEffect(() => {
     const tipo = localStorage.getItem('role') || 'maestro';
@@ -197,6 +198,24 @@ const Alumnos = () => {
     }
   };
 
+  const getFilterTitle = () => {
+    switch (mainFilter) {
+      case 'evaluacion_pendiente':
+        return 'Alumnos con Evaluación Pendiente';
+      case 'mejor_desempeno':
+        return 'Alumnos con Mejor Desempeño';
+      case 'bajo_desempeno':
+        return 'Alumnos con Bajo Desempeño';
+      default:
+        return 'Todos los Alumnos';
+    }
+  };
+
+  const handleFilterClick = (filter) => {
+    setMainFilter(filter);
+    setShowFilterResults(true);
+  };
+
   if (userType !== 'maestro') {
     return <div className="alumnos-container"><h2>No tienes acceso a esta sección.</h2></div>;
   }
@@ -223,25 +242,25 @@ const Alumnos = () => {
           <div className="filtros-container">
             <button
               className={`filter-button ${mainFilter === 'todos' ? 'active' : ''}`}
-              onClick={() => setMainFilter('todos')}
+              onClick={() => handleFilterClick('todos')}
             >
               Todos los alumnos
             </button>
             <button
               className={`filter-button ${mainFilter === 'evaluacion_pendiente' ? 'active' : ''}`}
-              onClick={() => setMainFilter('evaluacion_pendiente')}
+              onClick={() => handleFilterClick('evaluacion_pendiente')}
             >
               Evaluación pendiente
             </button>
             <button
               className={`filter-button ${mainFilter === 'mejor_desempeno' ? 'active' : ''}`}
-              onClick={() => setMainFilter('mejor_desempeno')}
+              onClick={() => handleFilterClick('mejor_desempeno')}
             >
               Mejor desempeño
             </button>
             <button
               className={`filter-button ${mainFilter === 'bajo_desempeno' ? 'active' : ''}`}
-              onClick={() => setMainFilter('bajo_desempeno')}
+              onClick={() => handleFilterClick('bajo_desempeno')}
             >
               Bajo desempeño
             </button>
@@ -290,26 +309,43 @@ const Alumnos = () => {
                           <h3>{student.username}</h3>
                           <p>{student.email}</p>
                         </div>
-                        <div className="acciones-alumno">
-                          <button 
-                            className="btn-accion"
-                            onClick={() => {
-                              setSelectedAssignment({
-                                ...selectedAssignment,
-                                student: student.id
-                              });
-                              setShowSearchResults(false);
-                              setShowModalAsignacion(true);
-                            }}
-                          >
-                            Asignar Materia
-                          </button>
-                        </div>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <p className="no-resultados">No se encontraron alumnos</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showFilterResults && (
+          <div className="modal-overlay">
+            <div className="modal-container">
+              <div className="modal-header">
+                <h2>{getFilterTitle()}</h2>
+                <button 
+                  className="modal-close-btn" 
+                  onClick={() => setShowFilterResults(false)}
+                >
+                  &times;
+                </button>
+              </div>
+              <div className="modal-content">
+                {filteredStudents.length > 0 ? (
+                  <div className="resultados-busqueda">
+                    {filteredStudents.map((student) => (
+                      <div key={student.id} className="resultado-alumno">
+                        <div className="info-alumno">
+                          <h3>{student.username}</h3>
+                          <p>{student.email}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="no-resultados">No se encontraron alumnos para este filtro</p>
                 )}
               </div>
             </div>

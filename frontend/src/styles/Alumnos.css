@@ -271,24 +271,29 @@
 }
 
 .busqueda-alumnos {
-  margin: 20px 0;
+  margin: 0;
   padding: 0 20px;
 }
 
 .busqueda-alumnos input {
   width: 100%;
-  max-width: 400px;
-  padding: 10px 15px;
-  border: 1px solid #ddd;
-  border-radius: 20px;
+  padding: 12px 20px;
+  border: 2px solid #e0e0e0;
+  border-radius: 25px;
   font-size: 16px;
   outline: none;
   transition: all 0.3s ease;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .busqueda-alumnos input:focus {
-  border-color: #6B5B95;
-  box-shadow: 0 0 0 2px rgba(107, 91, 149, 0.2);
+  border-color: #4CAF50;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+}
+
+.busqueda-alumnos input::placeholder {
+  color: #999;
 }
 
 .resultados-busqueda {
@@ -355,6 +360,7 @@
   margin-bottom: 20px;
   gap: 20px;
   flex-wrap: wrap;
+  margin-top: -40px;
 }
 
 .filtros-container {
@@ -365,10 +371,10 @@
 
 .filter-button {
   padding: 8px 16px;
-  border: 1px solid #ddd;
+  border: 1px solid #4CAF50;
   border-radius: 20px;
   background-color: white;
-  color: #666;
+  color: #4CAF50;
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 14px;
@@ -376,14 +382,15 @@
 }
 
 .filter-button:hover {
-  background-color: #f0f0f0;
-  border-color: #999;
+  background-color: #4CAF50;
+  color: white;
+  border-color: #4CAF50;
 }
 
 .filter-button.active {
-  background-color: #6B5B95;
+  background-color: #4CAF50;
   color: white;
-  border-color: #6B5B95;
+  border-color: #4CAF50;
 }
 
 @media (max-width: 768px) {
@@ -401,4 +408,30 @@
     min-width: 150px;
     text-align: center;
   }
+}
+
+.promedio {
+  margin: 5px 0 0;
+  font-size: 14px;
+  color: #6B5B95;
+  font-weight: 600;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  transition: color 0.2s ease;
+}
+
+.modal-close-btn:hover {
+  color: #333;
 } 
