@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Question = require('../models/Question');
 const TeacherSubject = require('../models/TeacherSubject');
+const ExamQuestion = require('../models/ExamQuestion');
 
 const getQuestionsBySubject = async (req, res) => {
   try {
@@ -116,8 +117,125 @@ const getQuestionsByTeacher = async (req, res) => {
   }
 };
 
+const updateQuestion = async (req, res) => {
+  try {
+    console.log('Iniciando actualización de pregunta');
+    console.log('ID recibido:', req.params.id);
+    console.log('Datos recibidos:', req.body);
+
+    const { question, correctAnswer, score } = req.body;
+    
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      console.log('ID inválido:', req.params.id);
+      return res.status(400).json({ 
+        message: 'ID de pregunta inválido',
+        receivedId: req.params.id
+      });
+    }
+
+    if (!question || !correctAnswer || !score) {
+      console.log('Datos incompletos:', { question, correctAnswer, score });
+      return res.status(400).json({ 
+        message: 'Todos los campos son requeridos',
+        receivedData: { question, correctAnswer, score }
+      });
+    }
+
+    const updatedQuestion = await Question.findByIdAndUpdate(
+      req.params.id,
+      { 
+        question,
+        correctAnswer,
+        score: parseInt(score)
+      },
+      { new: true }
+    );
+    
+    if (!updatedQuestion) {
+      console.log('Pregunta no encontrada con ID:', req.params.id);
+      return res.status(404).json({ message: 'Pregunta no encontrada' });
+    }
+
+    console.log('Pregunta actualizada exitosamente:', updatedQuestion);
+    res.json(updatedQuestion);
+  } catch (error) {
+    console.error('Error detallado al actualizar pregunta:', {
+      message: error.message,
+      stack: error.stack,
+      requestBody: req.body,
+      questionId: req.params.id
+    });
+    res.status(500).json({ 
+      message: 'Error al actualizar la pregunta',
+      error: error.message 
+    });
+  }
+};
+
+const deleteQuestion = async (req, res) => {
+  try {
+    const questionId = req.params.id;
+    console.log('Intentando eliminar pregunta con ID:', questionId);
+
+    // Primero verificamos si la pregunta existe
+    const question = await Question.findById(questionId);
+    if (!question) {
+      console.log('Pregunta no encontrada');
+      return res.status(404).json({ message: 'Pregunta no encontrada' });
+    }
+
+    // Verificar si la pregunta está siendo usada en algún examen
+    const examQuestions = await ExamQuestion.find({ question: questionId });
+    if (examQuestions.length > 0) {
+      console.log('La pregunta está siendo usada en exámenes:', examQuestions.length);
+      return res.status(400).json({ 
+        message: 'No se puede eliminar la pregunta porque está siendo usada en uno o más exámenes',
+        examCount: examQuestions.length
+      });
+    }
+
+    // Si no está siendo usada, procedemos a eliminarla
+    console.log('Procediendo a eliminar la pregunta');
+    const deletedQuestion = await Question.findByIdAndDelete(questionId);
+
+    if (deletedQuestion) {
+      console.log('Pregunta eliminada exitosamente');
+      res.json({ 
+        message: 'Pregunta eliminada correctamente',
+        deletedQuestion 
+      });
+    } else {
+      console.log('Error: La pregunta no pudo ser eliminada');
+      res.status(500).json({ 
+        message: 'No se pudo eliminar la pregunta' 
+      });
+    }
+  } catch (error) {
+    console.error('Error detallado al eliminar pregunta:', {
+      message: error.message,
+      stack: error.stack,
+      questionId: req.params.id
+    });
+    
+    // Verificar si es un error de ID inválido
+    if (error.name === 'CastError' && error.kind === 'ObjectId') {
+      return res.status(400).json({ 
+        message: 'ID de pregunta inválido',
+        error: error.message 
+      });
+    }
+
+    res.status(500).json({ 
+      message: 'Error al eliminar la pregunta',
+      error: error.message 
+    });
+  }
+};
+
 module.exports = {
   getQuestionsBySubject,
   createQuestion,
-  getQuestionsByTeacher
+  getQuestionsByTeacher,
+  updateQuestion,
+  deleteQuestion
 }; 

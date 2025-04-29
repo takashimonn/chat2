@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axiosInstance from "../utils/axiosConfig";
 import Swal from "sweetalert2";
 import "../styles/Exams.css";
+import { FaEdit, FaTrash } from "react-icons/fa";
 
 const Exams = () => {
   const [subjects, setSubjects] = useState([]);
@@ -33,6 +34,8 @@ const Exams = () => {
   const [teacherQuestionsBank, setTeacherQuestionsBank] = useState([]);
   const [selectedBankSubject, setSelectedBankSubject] = useState("");
   const [filteredBankQuestions, setFilteredBankQuestions] = useState([]);
+  const [showActionModal, setShowActionModal] = useState(false);
+  const [selectedQuestion, setSelectedQuestion] = useState(null);
 
   useEffect(() => {
     const fetchSubjects = async () => {
@@ -733,6 +736,170 @@ const Exams = () => {
     }
   };
 
+  const handleQuestionClick = (question) => {
+    setSelectedQuestion(question);
+    setShowActionModal(true);
+  };
+
+  const handleCloseActionModal = () => {
+    setSelectedQuestion(null);
+    setShowActionModal(false);
+  };
+
+  const handleEditQuestion = async () => {
+    try {
+      const result = await Swal.fire({
+        title: 'Editar Pregunta',
+        html: `
+          <div class="edit-question-form">
+            <textarea id="questionText" class="swal2-textarea" placeholder="Pregunta">${selectedQuestion.question}</textarea>
+            <textarea id="answerText" class="swal2-textarea" placeholder="Respuesta correcta">${selectedQuestion.correctAnswer}</textarea>
+            <input type="number" id="scoreInput" class="swal2-input" value="${selectedQuestion.score || 10}" min="1">
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Guardar',
+        cancelButtonText: 'Cancelar',
+        preConfirm: () => {
+          const questionText = document.getElementById('questionText').value;
+          const answerText = document.getElementById('answerText').value;
+          const score = parseInt(document.getElementById('scoreInput').value) || 10;
+
+          if (!questionText || !answerText) {
+            Swal.showValidationMessage('Por favor completa todos los campos');
+            return false;
+          }
+
+          if (score < 1) {
+            Swal.showValidationMessage('El puntaje debe ser mayor a 0');
+            return false;
+          }
+
+          return { questionText, answerText, score };
+        }
+      });
+
+      if (result.isConfirmed) {
+        // Mostrar loading mientras se procesa
+        Swal.fire({
+          title: 'Actualizando pregunta...',
+          text: 'Por favor espere',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        const { questionText, answerText, score } = result.value;
+        
+        const response = await axiosInstance.put(`/questions/${selectedQuestion._id}`, {
+          question: questionText,
+          correctAnswer: answerText,
+          score: score
+        });
+
+        if (response.data) {
+          // Actualizar la lista de preguntas
+          const questionsResponse = await axiosInstance.get("/questions/teacher");
+          setTeacherQuestionsBank(questionsResponse.data);
+
+          handleCloseActionModal();
+
+          await Swal.fire({
+            icon: 'success',
+            title: '¡Pregunta actualizada!',
+            text: 'Los cambios se guardaron correctamente',
+            showConfirmButton: false,
+            timer: 1500
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error al editar la pregunta:', error);
+      let errorMessage = 'No se pudo actualizar la pregunta.';
+      
+      if (error.response) {
+        if (error.response.status === 404) {
+          errorMessage = 'La pregunta no fue encontrada. Es posible que haya sido eliminada.';
+        } else {
+          errorMessage = error.response.data.message || errorMessage;
+        }
+      }
+
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: errorMessage,
+        confirmButtonColor: '#3085d6'
+      });
+    }
+  };
+
+  const handleDeleteQuestion = async () => {
+    try {
+      const result = await Swal.fire({
+        title: '¿Estás seguro?',
+        text: "Esta acción no se puede deshacer",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+      });
+
+      if (result.isConfirmed) {
+        // Mostrar loading mientras se procesa
+        Swal.fire({
+          title: 'Eliminando pregunta...',
+          text: 'Por favor espere',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        const response = await axiosInstance.delete(`/questions/${selectedQuestion._id}`);
+
+        if (response.data) {
+          // Actualizar la lista de preguntas
+          const questionsResponse = await axiosInstance.get("/questions/teacher");
+          setTeacherQuestionsBank(questionsResponse.data);
+
+          handleCloseActionModal();
+
+          await Swal.fire({
+            icon: 'success',
+            title: '¡Pregunta eliminada!',
+            text: 'La pregunta se eliminó correctamente',
+            showConfirmButton: false,
+            timer: 1500
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error al eliminar la pregunta:', error);
+      let errorMessage = 'No se pudo eliminar la pregunta.';
+      
+      if (error.response) {
+        if (error.response.status === 404) {
+          errorMessage = 'La pregunta no fue encontrada. Es posible que haya sido eliminada.';
+        } else if (error.response.status === 400 && error.response.data.examCount) {
+          errorMessage = `No se puede eliminar la pregunta porque está siendo usada en ${error.response.data.examCount} examen(es).`;
+        } else {
+          errorMessage = error.response.data.message || errorMessage;
+        }
+      }
+
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: errorMessage,
+        confirmButtonColor: '#3085d6'
+      });
+    }
+  };
+
   return (
     <div className="contenedor-principal">
       <div className="contenedor">
@@ -1098,7 +1265,7 @@ const Exams = () => {
                   <select
                     value={selectedSubject || selectedBankSubject}
                     onChange={e => {
-                      if (selectedSubject) return; // Si ya hay materia seleccionada principal, no permitir cambiar
+                      if (selectedSubject) return;
                       setSelectedBankSubject(e.target.value);
                     }}
                     disabled={!!selectedSubject}
@@ -1114,9 +1281,15 @@ const Exams = () => {
                     <p>No hay preguntas registradas para esta materia.</p>
                   )}
                   {getBankQuestionsToShow().map((q, idx) => (
-                    <div key={q._id || idx} className="question-item">
-                      <div>
-                        <b>Pregunta:</b> {q.question}
+                    <div 
+                      key={q._id || idx} 
+                      className="question-item bank-question"
+                      onClick={() => handleQuestionClick(q)}
+                    >
+                      <div className="question-content">
+                        <div>
+                          <b>Pregunta:</b> {q.question}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -1125,6 +1298,33 @@ const Exams = () => {
                   <button type="button" onClick={() => { setShowBankModal(false); setSelectedBankSubject(""); }}>
                     Cerrar
                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Modal de acciones para editar/eliminar pregunta */}
+          {showActionModal && selectedQuestion && (
+            <div className="modal-overlay">
+              <div className="modal-content action-modal">
+                <div className="modal-header">
+                  <h3>Acciones de Pregunta</h3>
+                  <button className="modal-close-btn" onClick={handleCloseActionModal}>×</button>
+                </div>
+                <div className="modal-content">
+                  <div className="selected-question">
+                    <p><b>Pregunta:</b> {selectedQuestion.question}</p>
+                    <p><b>Respuesta:</b> {selectedQuestion.correctAnswer}</p>
+                    <p><b>Puntaje:</b> {selectedQuestion.score}</p>
+                  </div>
+                  <div className="action-buttons">
+                    <button className="action-btn edit" onClick={handleEditQuestion}>
+                      <FaEdit /> Editar
+                    </button>
+                    <button className="action-btn delete" onClick={handleDeleteQuestion}>
+                      <FaTrash /> Eliminar
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
